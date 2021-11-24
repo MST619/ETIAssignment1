@@ -102,14 +102,18 @@ func getPassengerRecords(db *sql.DB) {
 // 	}
 // }
 
-func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
-	query := fmt.Sprintf(
-		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d",
-		FN, LN, PN, EML, PID)
-	_, err := db.Query(query)
-	if err != nil {
-		panic(err.Error())
-	}
+// func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+// 	query := fmt.Sprintf(
+// 		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d",
+// 		FN, LN, PN, EML, PID)
+// 	_, err := db.Query(query)
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// }
+
+func DeletePassengers(db *sql.DB, PID int) {
+	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
 }
 
 func main() {
@@ -122,7 +126,8 @@ func main() {
 	}
 
 	//InsertPassengerRecord(db, 6, "Rosa", "Diaz", 44443333, "rdb99@gmail.com")
-	EditPassengeRecord(db, 0006, "Rosa", "Diaz", 43343443, "rdb99@gmail.com")
+	//EditPassengeRecord(db, 0006, "Rosa", "Diaz", 43343443, "rdb99@gmail.com")
+	DeletePassengers(db, 6)
 
 	getPassengerRecords(db)
 	//getDriverRecords(db)
