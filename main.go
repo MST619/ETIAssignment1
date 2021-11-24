@@ -15,7 +15,16 @@ type Passengers struct {
 	Email       string
 }
 
-func getRecords(db *sql.DB) {
+type Drivers struct {
+	DriverID    int
+	FirstName   string
+	LastName    string
+	PhoneNumber int
+	Email       string
+	LicenseNo   int
+}
+
+func getPassengerRecords(db *sql.DB) {
 	results, err := db.Query("Select * FROM ETIAsgn.Passengers")
 
 	if err != nil {
@@ -33,6 +42,24 @@ func getRecords(db *sql.DB) {
 	}
 }
 
+func getDriverRecords(db *sql.DB) {
+	results, err := db.Query("Select * FROM ETIAsgn.Drivers")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	for results.Next() {
+		var driver Drivers
+		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
+
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Println(driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo)
+	}
+}
+
 func main() {
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/Passengers")
 
@@ -41,6 +68,7 @@ func main() {
 	} else {
 		fmt.Println("Database opened")
 	}
-	getRecords(db)
+	getPassengerRecords(db)
+	getDriverRecords(db)
 	defer db.Close()
 }
