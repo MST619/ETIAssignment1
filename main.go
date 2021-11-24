@@ -92,9 +92,19 @@ func getPassengerRecords(db *sql.DB) {
 // 	}
 // }
 
-func EditRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+// func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+// 	query := fmt.Sprintf("INSERT INTO Passengers VALUES (%d, '%s', '%s', %d, '%s')", PID, FN, LN, PN, EML)
+
+// 	_, err := db.Query(query)
+
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// }
+
+func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
 	query := fmt.Sprintf(
-		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE ID=%d",
+		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d",
 		FN, LN, PN, EML, PID)
 	_, err := db.Query(query)
 	if err != nil {
@@ -103,7 +113,7 @@ func EditRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
 }
 
 func main() {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/Passengers")
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
 
 	if err != nil {
 		panic(err.Error())
@@ -111,7 +121,8 @@ func main() {
 		fmt.Println("Database opened")
 	}
 
-	EditRecord(db, 1, "Jake", "Peralta", 98998988, "jpnoice@gmail.com")
+	//InsertPassengerRecord(db, 6, "Rosa", "Diaz", 44443333, "rdb99@gmail.com")
+	EditPassengeRecord(db, 0006, "Rosa", "Diaz", 43343443, "rdb99@gmail.com")
 
 	getPassengerRecords(db)
 	//getDriverRecords(db)
