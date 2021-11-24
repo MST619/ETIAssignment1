@@ -55,40 +55,50 @@ func getPassengerRecords(db *sql.DB) {
 }
 
 //function to get the driver table from the database
-func getDriverRecords(db *sql.DB) {
-	results, err := db.Query("SELECT * FROM ETIAsgn.Drivers")
+// func getDriverRecords(db *sql.DB) {
+// 	results, err := db.Query("SELECT * FROM ETIAsgn.Drivers")
 
-	if err != nil {
-		panic(err.Error())
-	}
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
 
-	for results.Next() {
-		var driver Drivers
-		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
+// 	for results.Next() {
+// 		var driver Drivers
+// 		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
 
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Println(driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo)
-	}
-}
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
+// 		fmt.Println(driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo)
+// 	}
+// }
 
 //function to get the trip table from the database
-func getTripRecords(db *sql.DB) {
-	results, err := db.Query("SELECT * FROM ETIAsgn.Trip")
+// func getTripRecords(db *sql.DB) {
+// 	results, err := db.Query("SELECT * FROM ETIAsgn.Trip")
 
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+
+// 	for results.Next() {
+// 		var trip Trip
+// 		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
+
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
+// 		fmt.Println(trip.PostalCode, trip.Pickup, trip.Dropoff, trip.DriverID, trip.PassengerID)
+// 	}
+// }
+
+func EditRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+	query := fmt.Sprintf(
+		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE ID=%d",
+		FN, LN, PN, EML, PID)
+	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
-	}
-
-	for results.Next() {
-		var trip Trip
-		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
-
-		if err != nil {
-			panic(err.Error())
-		}
-		fmt.Println(trip.PostalCode, trip.Pickup, trip.Dropoff, trip.DriverID, trip.PassengerID)
 	}
 }
 
@@ -101,8 +111,10 @@ func main() {
 		fmt.Println("Database opened")
 	}
 
+	EditRecord(db, 1, "Jake", "Peralta", 98998988, "jpnoice@gmail.com")
+
 	getPassengerRecords(db)
-	getDriverRecords(db)
-	getTripRecords(db)
+	//getDriverRecords(db)
+	//getTripRecords(db)
 	defer db.Close()
 }
