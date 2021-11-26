@@ -113,7 +113,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 
-				//check if passenger exists; add only if passenger does not exist
+				//check if trip exists; add only if trip does not exist
 				if _, ok := trips[params["tripid"]]; !ok {
 					trips[params["tripid"]] = newTrip
 					w.WriteHeader(http.StatusCreated)
@@ -122,7 +122,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 					//update trip
 					trips[params["tripid"]] = newTrip
 					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Trip updated: " + params["trip"]))
+					w.Write([]byte("202 - Trip updated: " + params["tripid"]))
 				}
 			} else {
 				w.WriteHeader(http.StatusUnprocessableEntity)
