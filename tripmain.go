@@ -112,7 +112,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func main() {
+func main() { //Even tho have error, it works....
 	trips = make(map[string]tripInfo)
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/", triphome)
