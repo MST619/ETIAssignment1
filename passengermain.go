@@ -1,17 +1,28 @@
 package main
 
 import (
+	//"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
 type passengerInfo struct {
 	Title string `json:"Passenger"`
+}
+
+//Collections of fields for Passengers
+type Passengers struct {
+	PassengerID int
+	FirstName   string
+	LastName    string
+	PhoneNumber int
+	Email       string
 }
 
 func validKey(r *http.Request) bool {
@@ -35,6 +46,9 @@ func home(w http.ResponseWriter, r *http.Request) {
 
 func allPassengers(w http.ResponseWriter, r *http.Request) {
 	//fmt.Fprintln(w, "List of all passengers")
+	// w.Header().Set("Content-Type", "application/json")
+	// w.WriteHeader(http.StatusOK)
+	// json.NewEncoder(w).Encode(passengers)
 
 	kv := r.URL.Query()
 
@@ -135,7 +149,53 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// func getPassengerRecords(db *sql.DB) {
+// 	results, err := db.Query("SELECT * FROM ETIAsgn.Passengers")
+
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+
+// 	for results.Next() {
+// 		var passenger Passengers
+// 		err = results.Scan(&passenger.PassengerID, &passenger.FirstName, &passenger.LastName, &passenger.PhoneNumber, &passenger.Email)
+
+// 		if err != nil {
+// 			panic(err.Error())
+// 		}
+// 		fmt.Println(passenger.PassengerID, passenger.FirstName, passenger.LastName, passenger.PhoneNumber, passenger.Email)
+// 	}
+// }
+
+// func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+// 	query := fmt.Sprintf("INSERT INTO Passengers VALUES (%d, '%s', '%s', %d, '%s')", PID, FN, LN, PN, EML)
+
+// 	_, err := db.Query(query)
+
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// }
+
+// func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
+// 	query := fmt.Sprintf(
+// 		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d",
+// 		FN, LN, PN, EML, PID)
+// 	_, err := db.Query(query)
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+// }
+
 func main() {
+	// db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+
+	// if err != nil {
+	// 	panic(err.Error())
+	// } else {
+	// 	fmt.Println("Database opened")
+	// }
+
 	passengers = make(map[string]passengerInfo)
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/", home)
@@ -146,4 +206,8 @@ func main() {
 
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
+
+	//InsertPassengerRecord(db)
+	//EditPassengeRecord(db)
+	//getPassengerRecords(db)
 }
