@@ -1,20 +1,30 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
+var trips map[string]tripInfo
+
 type tripInfo struct {
-	Title string `json:"Trip"`
+	Title string `json:"Trips"`
 }
 
-var trips map[string]tripInfo
+type Trip struct {
+	PostalCode  int    `json:"PostalCode"`
+	Pickup      string `json:"Pickup"`
+	Dropoff     string `json:"Dropoff"`
+	DriverID    int    `json:"DriverID"`
+	PassengerID int    `json:"PassengerID"`
+}
 
 func tvalidKey(r *http.Request) bool {
 	v := r.URL.Query()
@@ -34,10 +44,7 @@ func triphome(w http.ResponseWriter, r *http.Request) {
 }
 
 func alltrips(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprintf(w, "List of all trips")
-
 	kv := r.URL.Query()
-
 	for k, v := range kv {
 		fmt.Println(k, v)
 	}
@@ -54,92 +61,161 @@ func trip(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("401 - Invalid key"))
 		return
 	}
-
-	params := mux.Vars(r)
-
-	if r.Method == "GET" {
-		if _, ok := trips[params["tripid"]]; ok {
-			json.NewEncoder(w).Encode(trips[params["tripid"]])
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 - No trip found"))
-		}
-	}
-
-	if r.Method == "DELETE" {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
-	}
+	//params := mux.Vars(r)
 
 	if r.Header.Get("Content-type") == "application/json" {
-		//POST for creating new driver
-		if r.Method == "POST" {
-			var newTrip tripInfo
-			reqbody, err := ioutil.ReadAll(r.Body)
+		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+		if err != nil {
+			panic(err.Error())
+		} else {
+			fmt.Println("Trip database opened!")
+		}
 
+		//THE GET REQUEST FOR TRIPS
+		if r.Method == "GET" {
+			var getAllTrips Trip
+			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
 			if err == nil {
-				json.Unmarshal(reqbody, &newTrip)
-
-				if newTrip.Title == "" {
+				err := json.Unmarshal(reqBody, &getAllTrips)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else if getAllTrips.Pickup != "" || getAllTrips.Dropoff != "" {
+					json.NewEncoder(w).Encode(GetAllTripsRecord(db, getAllTrips.Pickup, getAllTrips.Dropoff))
+					w.WriteHeader(http.StatusAccepted)
+					return
+				} else {
 					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply trip " + "information " + "in JSON format"))
+					w.Write([]byte("Invalid information!"))
 					return
 				}
-				if _, ok := trips[params["tripid"]]; !ok {
-					trips[params["tripid"]] = newTrip
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Trip added: " + params["tripid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte("409 - Duplicate Trip ID"))
-				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply trip information " + "in JSON format"))
 			}
 		}
 
-		//PUT for creating or updating existing trips
-		if r.Method == "PUT" {
-			var newTrip tripInfo
-			reqbody, err := ioutil.ReadAll(r.Body)
-
+		//POST for creating new driver
+		if r.Method == "POST" {
+			var newTrip Trip
+			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
 			if err == nil {
-				json.Unmarshal(reqbody, &newTrip)
+				err := json.Unmarshal(reqBody, &newTrip)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else {
+					if newTrip.Pickup == "" {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("422 - Please supply trip " + "information " + "in JSON format"))
+						return
+					} else {
+						if !validateTrips(db, newTrip.PostalCode) {
+							InsertTripRecord(db, newTrip.PostalCode, newTrip.Pickup, newTrip.Dropoff, newTrip.DriverID, newTrip.PassengerID)
+							w.WriteHeader(http.StatusCreated)
+							w.Write([]byte("201 - Trip added!"))
+							return
+						} else {
+							w.WriteHeader(http.StatusUnprocessableEntity)
+							w.Write([]byte("409 - Duplicate postal code"))
+							return
+						}
+					}
+				}
+			}
+			//PUT for creating or updating existing trips
+		} else if r.Method == "PUT" {
+			var updateTrip Trip
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err == nil {
+				json.Unmarshal(reqBody, &updateTrip)
 
-				if newTrip.Title == "" {
+				if updateTrip.Pickup == "" {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("422 - Please supply trip information " + "information " + "in JSON format"))
 					return
-				}
-
-				//check if trip exists; add only if trip does not exist
-				if _, ok := trips[params["tripid"]]; !ok {
-					trips[params["tripid"]] = newTrip
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Trip added: " + params["tripid"]))
 				} else {
-					//update trip
-					trips[params["tripid"]] = newTrip
-					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Trip updated: " + params["tripid"]))
+					if !validateTrips(db, updateTrip.PostalCode) {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("No trip found with: " + updateTrip.Pickup))
+					} else {
+						EditTripRecord(db, updateTrip.PostalCode, updateTrip.Pickup, updateTrip.Dropoff, updateTrip.DriverID, updateTrip.PassengerID)
+						w.WriteHeader(http.StatusCreated)
+						w.Write([]byte("201 - Passenger updated!"))
+					}
 				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply trip information " + "in JSON format"))
 			}
+		}
+		if r.Method == "DELETE" {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("404 - You are not able to delete your trip due to audit purposes"))
 		}
 	}
 }
 
-func main() { //Even tho have error, it works....
+func validateTrips(db *sql.DB, PSC int) bool {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Trip WHERE PostalCode= '%d'", PSC)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var trip Trip
+	for results.Next() {
+		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
+		if err != nil {
+			panic(err.Error())
+		} else if trip.PostalCode == PSC {
+			return true
+		}
+	}
+	return false
+}
+
+func GetAllTripsRecord(db *sql.DB, PKUP string, DRP string) Trip {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Trip WHERE Pickup= '%s' AND Dropoff='%s'", PKUP, DRP)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var trip Trip
+	for results.Next() {
+		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return trip
+}
+
+func InsertTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID int) bool {
+	query := fmt.Sprintf("INSERT INTO Trip VALUES ('%d','%s','%s','%d','%d')",
+		PSC, PKUP, DRP, DID, PID)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
+}
+
+func EditTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID int) bool {
+	query := fmt.Sprintf("UPDATE Trip SET PostalCode='%d', Pickup='%s', Dropoff='%s', DriverID='%d', PassengerID='%d' WHERE PostalCode='%d'",
+		PSC, PKUP, DRP, DID, PID)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
+}
+
+func DeleteTripRecord(db *sql.DB, PSC int) {
+	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
+}
+
+func main() {
 	trips = make(map[string]tripInfo)
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/", triphome)
-
-	router.HandleFunc("/api/v1/trips", alltrips)
-	router.HandleFunc("/api/v1/trips/{tripid}", trip).Methods(
-		"GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/trips/{tripid}", trip).Methods("GET", "PUT", "POST", "DELETE")
+	//router.HandleFunc("/api/v1/trips", alltrips)
 
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
