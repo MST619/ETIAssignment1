@@ -16,7 +16,7 @@ type tripInfo struct {
 
 var trips map[string]tripInfo
 
-func validKey(r *http.Request) bool {
+func tvalidKey(r *http.Request) bool {
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {
 		if key[0] == "2c78afaf-97da-4816-bbee-9ad239abb296" {
@@ -49,7 +49,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "\n")
 	// fmt.Fprintf(w, r.Method)
 
-	if !validKey(r) {
+	if !tvalidKey(r) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("401 - Invalid key"))
 		return

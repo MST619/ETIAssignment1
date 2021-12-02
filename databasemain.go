@@ -1,40 +1,38 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-
 	_ "github.com/go-sql-driver/mysql"
 )
 
 //Collections of fields for Passengers
-type Passengers struct {
-	PassengerID int
-	FirstName   string
-	LastName    string
-	PhoneNumber int
-	Email       string
-}
+// type Passengers struct {
+// 	PassengerID int
+// 	FirstName   string
+// 	LastName    string
+// 	PhoneNumber int
+// 	Email       string
+// }
 
 //Collections of fields for Drivers
-type Drivers struct {
-	DriverID    int
-	FirstName   string
-	LastName    string
-	PhoneNumber int
-	Email       string
-	LicenseNo   int
-}
+// type Drivers struct {
+// 	DriverID    int
+// 	FirstName   string
+// 	LastName    string
+// 	PhoneNumber int
+// 	Email       string
+// 	LicenseNo   int
+// }
 
 //Collections of fields for trips
-type Trip struct {
-	PostalCode  int
-	Pickup      string
-	Dropoff     string
-	DriverID    int
-	PassengerID int
-}
+// type Trip struct {
+// 	PostalCode  int
+// 	Pickup      string
+// 	Dropoff     string
+// 	DriverID    int
+// 	PassengerID int
+// }
 
+/*
 //Function to get the passenger table from the database
 func getPassengerRecords(db *sql.DB) {
 	results, err := db.Query("SELECT * FROM ETIAsgn.Passengers")
@@ -53,6 +51,7 @@ func getPassengerRecords(db *sql.DB) {
 		fmt.Println(passenger.PassengerID, passenger.FirstName, passenger.LastName, passenger.PhoneNumber, passenger.Email)
 	}
 }
+*/
 
 //function to get the driver table from the database
 // func getDriverRecords(db *sql.DB) {
@@ -112,6 +111,7 @@ func getPassengerRecords(db *sql.DB) {
 // 	}
 // }
 
+/*
 func DeletePassengers(db *sql.DB, PID int) {
 	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
 }
@@ -134,3 +134,4 @@ func main() {
 	//getTripRecords(db)
 	defer db.Close()
 }
+*/

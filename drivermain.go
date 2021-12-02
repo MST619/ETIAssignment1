@@ -14,7 +14,7 @@ type driverInfo struct {
 	Title string `json:"Driver"`
 }
 
-func validKey(r *http.Request) bool {
+func dvalidKey(r *http.Request) bool {
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {
 		if key[0] == "2c78afaf-97da-4816-bbee-9ad239abb296" {
@@ -50,7 +50,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, "\n")
 	// fmt.Fprintf(w, r.Method)
 
-	if !validKey(r) {
+	if !dvalidKey(r) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("401 - Invalid key"))
 		return

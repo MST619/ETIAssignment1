@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"database/sql"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,20 +12,26 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var passengers map[string]passengerInfo
+
+func home(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the REST API!")
+}
+
 type passengerInfo struct {
 	Title string `json:"Passenger"`
 }
 
 //Collections of fields for Passengers
 type Passengers struct {
-	PassengerID int
-	FirstName   string
-	LastName    string
-	PhoneNumber int
-	Email       string
+	PassengerID int    `json:"PassengerID"`
+	FirstName   string `json:"FirstName"`
+	LastName    string `json:"LastName"`
+	PhoneNumber int    `json:"PhoneNumber"`
+	Email       string `json:"Email"`
 }
 
-func validKey(r *http.Request) bool {
+func pvalidKey(r *http.Request) bool {
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {
 		if key[0] == "2c78afaf-97da-4816-bbee-9ad239abb296" {
@@ -38,10 +44,94 @@ func validKey(r *http.Request) bool {
 	}
 }
 
-var passengers map[string]passengerInfo
+func passenger(w http.ResponseWriter, r *http.Request) {
+	if !pvalidKey(r) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("401 - Invalid key"))
+		return
+	}
 
-func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the REST API!")
+	if r.Header.Get("Content-type") == "application/json" {
+		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+		if err != nil {
+			panic(err.Error())
+		} else {
+			fmt.Println("Database opened!")
+		}
+
+		if r.Method == "GET" {
+			var getAllPassengers Passengers
+			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
+			if err == nil {
+				err := json.Unmarshal(reqBody, &getAllPassengers)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else if getAllPassengers.FirstName != "" || getAllPassengers.Email != "" {
+					json.NewEncoder(w).Encode(GetPassengerRecord(db, getAllPassengers.PassengerID, getAllPassengers.Email))
+					w.WriteHeader(http.StatusAccepted)
+					return
+				} else {
+					w.WriteHeader(http.StatusUnprocessableEntity)
+					w.Write([]byte("Invalid information!"))
+					return
+				}
+			}
+		}
+
+		//POST for creating new passenger
+		if r.Method == "POST" {
+			var newPassenger Passengers
+			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
+			if err == nil {
+				err := json.Unmarshal(reqBody, &newPassenger)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else {
+					if newPassenger.Email == "" {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("422 - Please supply passenger " + "information " + "in JSON format"))
+						return
+					} else {
+						if !validatePassengerRecord(db, newPassenger.Email) {
+							InsertPassengerRecord(db, newPassenger.PassengerID, newPassenger.FirstName, newPassenger.LastName, newPassenger.PhoneNumber, newPassenger.Email)
+							w.WriteHeader(http.StatusCreated)
+							w.Write([]byte("201 - Passenger added!"))
+							return
+						} else {
+							w.WriteHeader(http.StatusUnprocessableEntity)
+							w.Write([]byte("409 - Duplicate passenger ID"))
+							return
+						}
+					}
+				}
+			}
+		} else if r.Method == "PUT" {
+			var updatePassenger Passengers
+			reqBody, err := ioutil.ReadAll(r.Body)
+			if err == nil {
+				json.Unmarshal(reqBody, &updatePassenger)
+
+				if updatePassenger.FirstName == "" {
+					w.WriteHeader(http.StatusUnprocessableEntity)
+					w.Write([]byte("422 - Please supply passenger information " + "information " + "in JSON format"))
+					return
+				} else {
+					if !validatePassengerRecord(db, updatePassenger.Email) {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("No passenger found with: " + updatePassenger.Email))
+					} else {
+						EditPassengeRecord(db, updatePassenger.PassengerID, updatePassenger.FirstName, updatePassenger.LastName, updatePassenger.PhoneNumber, updatePassenger.Email)
+						w.WriteHeader(http.StatusCreated)
+						w.Write([]byte("201 - Passenger updated!"))
+					}
+				}
+			}
+		}
+	}
 }
 
 func allPassengers(w http.ResponseWriter, r *http.Request) {
@@ -59,133 +149,62 @@ func allPassengers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(passengers)
 }
 
-func passenger(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	// fmt.Fprintf(w, "Passenger details"+params["passengerid"])
-	// fmt.Fprintf(w, "\n")
-	// fmt.Fprintf(w, r.Method)
-
-	if !validKey(r) {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("401 - Invalid key"))
-		return
+func validatePassengerRecord(db *sql.DB, EML string) bool {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE Email= '%s'", EML)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
 	}
-
-	if r.Method == "GET" {
-		if _, ok := passengers[params["passengerid"]]; ok {
-			json.NewEncoder(w).Encode(
-				passengers[params["passengerid"]])
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 - No passenger found"))
+	var passenger Passengers
+	for results.Next() {
+		err = results.Scan(&passenger.PassengerID, &passenger.FirstName, &passenger.LastName, &passenger.PhoneNumber, &passenger.Email)
+		if err != nil {
+			panic(err.Error())
+		} else if passenger.Email == EML {
+			return true
 		}
 	}
-
-	if r.Method == "DELETE" {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
-	}
-
-	if r.Header.Get("Content-type") == "application/json" {
-
-		//POST for creating new passenger
-		if r.Method == "POST" {
-			var newPassenger passengerInfo
-			reqBody, err := ioutil.ReadAll(r.Body)
-
-			if err == nil {
-				json.Unmarshal(reqBody, &newPassenger)
-
-				if newPassenger.Title == "" {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply passenger " + "information " + "in JSON format"))
-					return
-				}
-
-				if _, ok := passengers[params["passengerid"]]; !ok {
-					passengers[params["passengerid"]] = newPassenger
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Passenger added: " + params["passengerid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte("409 - Duplicate passenger ID"))
-				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply passenger information " + "in JSON format"))
-			}
-		}
-
-		//PUT for creating or updating existing passengers
-		if r.Method == "PUT" {
-			var newPassenger passengerInfo
-			reqbody, err := ioutil.ReadAll(r.Body)
-
-			if err == nil {
-				json.Unmarshal(reqbody, &newPassenger)
-
-				if newPassenger.Title == "" {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply passenger information " + "information " + "in JSON format"))
-					return
-				}
-				// check if passenger exists; add only if passenger does not exist
-				if _, ok := passengers[params["passengerid"]]; !ok {
-					passengers[params["passengerid"]] = newPassenger
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Passenger added: " + params["passengerid"]))
-				} else {
-					//update passenger
-					passengers[params["passengerid"]] = newPassenger
-					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Passenger updated: " + params["passengerid"]))
-				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply passenger information " + "information " + "in JSON format"))
-			}
-		}
-	}
+	return false
 }
 
-// func getPassengerRecords(db *sql.DB) {
-// 	results, err := db.Query("SELECT * FROM ETIAsgn.Passengers")
+func GetPassengerRecord(db *sql.DB, PID int, EML string) Passengers {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE PassengerID= '%d' AND Email= '%s'", PID, EML)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var passenger Passengers
+	for results.Next() {
+		err = results.Scan(&passenger.PassengerID, &passenger.FirstName, &passenger.LastName, &passenger.PhoneNumber, &passenger.Email)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return passenger
+}
 
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
+func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
+	query := fmt.Sprintf("INSERT INTO Passengers VALUES ('%d','%s','%s','%d','%s');", PID, FN, LN, PN, EML)
 
-// 	for results.Next() {
-// 		var passenger Passengers
-// 		err = results.Scan(&passenger.PassengerID, &passenger.FirstName, &passenger.LastName, &passenger.PhoneNumber, &passenger.Email)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
+}
 
-// 		if err != nil {
-// 			panic(err.Error())
-// 		}
-// 		fmt.Println(passenger.PassengerID, passenger.FirstName, passenger.LastName, passenger.PhoneNumber, passenger.Email)
-// 	}
-// }
+func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
+	query := fmt.Sprintf("UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d", FN, LN, PN, EML, PID)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
+}
 
-// func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
-// 	query := fmt.Sprintf("INSERT INTO Passengers VALUES (%d, '%s', '%s', %d, '%s')", PID, FN, LN, PN, EML)
-
-// 	_, err := db.Query(query)
-
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
-// }
-
-// func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) {
-// 	query := fmt.Sprintf(
-// 		"UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d",
-// 		FN, LN, PN, EML, PID)
-// 	_, err := db.Query(query)
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
-// }
+func DeletePassengers(db *sql.DB, PID int) {
+	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
+}
 
 func main() {
 	// db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
@@ -199,10 +218,11 @@ func main() {
 	passengers = make(map[string]passengerInfo)
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/", home)
+	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods("GET", "PUT", "POST", "DELETE")
 
-	router.HandleFunc("/api/v1/passengers", allPassengers)
-	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods(
-		"GET", "PUT", "POST", "DELETE")
+	//router.HandleFunc("/api/v1/passengers/create", CreatePassenger).Methods("POST")
+	//router.HandleFunc("/api/v1/passengers/get", GetAllPassengers).Methods("GET")
+	//router.HandleFunc("/api/v1/passengers", allPassengers)
 
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
