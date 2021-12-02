@@ -131,6 +131,10 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
+		if r.Method == "DELETE" {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
+		}
 	}
 }
 

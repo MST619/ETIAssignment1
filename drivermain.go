@@ -1,17 +1,30 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 )
 
+var drivers map[string]driverInfo
+
 type driverInfo struct {
 	Title string `json:"Driver"`
+}
+
+type Drivers struct {
+	DriverID    int    `json:"DriverID"`
+	FirstName   string `json:"FirstName"`
+	LastName    string `json:"LastName"`
+	PhoneNumber int    `json:"PhoneNumber"`
+	Email       string `json:"Email"`
+	LicenseNo   int    `json:"LicenseNo"`
 }
 
 func dvalidKey(r *http.Request) bool {
@@ -27,25 +40,21 @@ func dvalidKey(r *http.Request) bool {
 	}
 }
 
-var drivers map[string]driverInfo
-
 func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the REST API!")
+	fmt.Fprintf(w, "Welcome to the Driver REST API!")
 }
 
 func alldrivers(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprintf(w, "List of all drivers")
-
 	kv := r.URL.Query()
-
 	for k, v := range kv {
 		fmt.Println(k, v)
 	}
 	json.NewEncoder(w).Encode(drivers)
 }
 
+//Main func for driver to call the requests, GET, PUT, POST, and DELETE
 func driver(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+	//params := mux.Vars(r)
 	// fmt.Fprintf(w, "Detail for driver "+params["driverid"])
 	// fmt.Fprintf(w, "\n")
 	// fmt.Fprintf(w, r.Method)
@@ -56,88 +65,155 @@ func driver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method == "GET" {
-		if _, ok := drivers[params["driverid"]]; ok {
-			json.NewEncoder(w).Encode(drivers[params["driverid"]])
-		} else {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 - No driver found"))
-		}
-	}
-
-	if r.Method == "DELETE" {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
-	}
-
 	if r.Header.Get("Content-type") == "application/json" {
-		//POST for creating new driver
-		if r.Method == "POST" {
-			var newDriver driverInfo
+		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+		if err != nil {
+			panic(err.Error())
+		} else {
+			fmt.Println("Driver database opened!")
+		}
+
+		//THE GET REQUEST FOR DRIVER
+		if r.Method == "GET" {
+			var getAllDrivers Drivers
 			reqBody, err := ioutil.ReadAll(r.Body)
-
+			defer r.Body.Close()
 			if err == nil {
-				json.Unmarshal(reqBody, &newDriver)
-
-				if newDriver.Title == "" {
+				err := json.Unmarshal(reqBody, &getAllDrivers)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else if getAllDrivers.FirstName != "" || getAllDrivers.Email != "" {
+					json.NewEncoder(w).Encode(GetDriverRecords(db, getAllDrivers.DriverID, getAllDrivers.Email))
+					w.WriteHeader(http.StatusAccepted)
+					return
+				} else {
 					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply driver " + "information " + "in JSON format"))
+					w.Write([]byte("Invalid information!"))
 					return
 				}
-				if _, ok := drivers[params["driverid"]]; !ok {
-					drivers[params["driverid"]] = newDriver
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Driver added: " + params["driverid"]))
-				} else {
-					w.WriteHeader(http.StatusConflict)
-					w.Write([]byte("409 - Duplicate Driver ID"))
-				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply driver information " + "in JSON format"))
 			}
 		}
 
-		//PUT for creating or updating existing drivers
-		if r.Method == "PUT" {
-			var newDriver driverInfo
-			reqbody, err := ioutil.ReadAll(r.Body)
-
+		//POST for creating new driver
+		if r.Method == "POST" {
+			var newDriver Drivers
+			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
 			if err == nil {
-				json.Unmarshal(reqbody, &newDriver)
+				err := json.Unmarshal(reqBody, &newDriver)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				} else {
+					if newDriver.Email == "" {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("422 - Please supply driver information " + "in JSON format"))
+						return
+					} else {
+						if !validateDriverRecord(db, newDriver.Email) {
+							InsertDriverRecord(db, newDriver.DriverID, newDriver.FirstName, newDriver.LastName, newDriver.PhoneNumber, newDriver.Email, newDriver.LicenseNo)
+							w.WriteHeader(http.StatusCreated)
+							w.Write([]byte("201 - Driver added!"))
+							return
+						} else {
+							w.WriteHeader(http.StatusUnprocessableEntity)
+							w.Write([]byte("409 - Duplicate Driver ID"))
+							return
+						}
+					}
+				}
+			}
+			//PUT for creating or updating existing drivers
+		} else if r.Method == "PUT" {
+			var updateDriver Drivers
+			reqbody, err := ioutil.ReadAll(r.Body)
+			if err == nil {
+				json.Unmarshal(reqbody, &updateDriver)
 
-				if newDriver.Title == "" {
+				if updateDriver.FirstName == "" {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("422 - Please supply driver information " + "information " + "in JSON format"))
 					return
-				}
-				//check if passenger exists; add only if passenger does not exist
-				if _, ok := drivers[params["driverid"]]; !ok {
-					drivers[params["driverid"]] = newDriver
-					w.WriteHeader(http.StatusCreated)
-					w.Write([]byte("201 - Driver added: " + params["driverid"]))
 				} else {
-					//update passenger
-					drivers[params["driverid"]] = newDriver
-					w.WriteHeader(http.StatusAccepted)
-					w.Write([]byte("202 - Driver updated: " + params["driverid"]))
+					if !validateDriverRecord(db, updateDriver.Email) {
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						w.Write([]byte("No driver found with: " + updateDriver.Email))
+					} else {
+						EditDriverRecord(db, updateDriver.DriverID, updateDriver.FirstName, updateDriver.LastName, updateDriver.PhoneNumber, updateDriver.Email, updateDriver.LicenseNo)
+						w.WriteHeader(http.StatusCreated)
+						w.Write([]byte("201 - Driver updated!"))
+					}
 				}
-			} else {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("422 - Please supply driver information " + "in JSON format"))
 			}
 		}
+		if r.Method == "DELETE" {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
+		}
 	}
+}
+
+func validateDriverRecord(db *sql.DB, EML string) bool {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Drivers WHERE Email= '%s'", EML)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var driver Drivers
+	for results.Next() {
+		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
+		if err != nil {
+			panic(err.Error())
+		} else if driver.Email == EML {
+			return true
+		}
+	}
+	return false
+}
+
+func GetDriverRecords(db *sql.DB, DID int, EML string) Drivers {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Drivers WHERE DriverID= '%d' AND Email= '%s'", DID, EML)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var driver Drivers
+	for results.Next() {
+		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return driver
+}
+
+func InsertDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML string, LCN int) bool {
+	query := fmt.Sprintf("INSERT INTO Drivers VALUES ('%d', '%s', '%s', '%d', '%s', '%d');",
+		DID, FN, LN, PN, EML, LCN)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
+}
+
+func EditDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML string, LCN int) bool {
+	query := fmt.Sprintf("UPDATE Drivers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s', LicenseNo='%d' WHERE DriverID='%d'",
+		FN, LN, PN, EML, LCN, DID)
+	_, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	return true
 }
 
 func main() {
 	drivers = make(map[string]driverInfo)
 	router := mux.NewRouter()
 	router.HandleFunc("/api/v1/", home)
-
-	router.HandleFunc("/api/v1/drivers", alldrivers)
-	router.HandleFunc("/api/v1/drivers/{driverid}", driver).Methods(
-		"GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/drivers/{driverid}", driver).Methods("GET", "PUT", "POST", "DELETE")
+	//router.HandleFunc("/api/v1/drivers", alldrivers)
 
 	fmt.Println("Listening at port 5000")
 	log.Fatal(http.ListenAndServe(":5000", router))
