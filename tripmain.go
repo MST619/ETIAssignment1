@@ -19,11 +19,12 @@ type tripInfo struct {
 }
 
 type Trip struct {
-	PostalCode  int    `json:"PostalCode"`
-	Pickup      string `json:"Pickup"`
-	Dropoff     string `json:"Dropoff"`
+	TripID      int    `json:"TripID"`
+	PickupPC    string `json:"PickupPC"`
+	DropoffPC   string `json:"DropoffPC"`
 	DriverID    int    `json:"DriverID"`
 	PassengerID int    `json:"PassengerID"`
+	TripStatus  string `json:"TripStatus"`
 }
 
 func tvalidKey(r *http.Request) bool {
@@ -52,27 +53,25 @@ func alltrips(w http.ResponseWriter, r *http.Request) {
 }
 
 func trip(w http.ResponseWriter, r *http.Request) {
-	// fmt.Fprintf(w, "Detail for trips "+params["tripid"])
-	// fmt.Fprintf(w, "\n")
-	// fmt.Fprintf(w, r.Method)
-
 	if !tvalidKey(r) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("401 - Invalid key"))
 		return
 	}
-	//params := mux.Vars(r)
 
+	//Database Connection
 	if r.Header.Get("Content-type") == "application/json" {
 		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
 		if err != nil {
 			panic(err.Error())
 		} else {
-			fmt.Println("Trip database opened!")
+			fmt.Println("Trips database opened!")
 		}
 
 		//THE GET REQUEST FOR TRIPS
 		if r.Method == "GET" {
+			params := mux.Vars(r)
+			//fmt.Println(params)
 			var getAllTrips Trip
 			reqBody, err := ioutil.ReadAll(r.Body)
 			defer r.Body.Close()
@@ -81,19 +80,18 @@ func trip(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else if getAllTrips.Pickup != "" || getAllTrips.Dropoff != "" {
-					json.NewEncoder(w).Encode(GetAllTripsRecord(db, getAllTrips.Pickup, getAllTrips.Dropoff))
-					w.WriteHeader(http.StatusAccepted)
-					return
 				} else {
 					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("Invalid information!"))
+					w.Write([]byte("Invalid trip!"))
 					return
 				}
 			}
+			json.NewEncoder(w).Encode(GetAllTripsRecord(db, params["tripid"]))
+			w.WriteHeader(http.StatusAccepted)
+			return
 		}
 
-		//POST for creating new driver
+		//POST request for creating new trip
 		if r.Method == "POST" {
 			var newTrip Trip
 			reqBody, err := ioutil.ReadAll(r.Body)
@@ -104,19 +102,19 @@ func trip(w http.ResponseWriter, r *http.Request) {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
 				} else {
-					if newTrip.Pickup == "" {
+					if newTrip.PassengerID == 0 || newTrip.DriverID == 0 {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("422 - Please supply trip " + "information " + "in JSON format"))
 						return
 					} else {
-						if !validateTrips(db, newTrip.PostalCode) {
-							InsertTripRecord(db, newTrip.PostalCode, newTrip.Pickup, newTrip.Dropoff, newTrip.DriverID, newTrip.PassengerID)
+						if validateTrips(db, newTrip.PassengerID, newTrip.DriverID) {
+							InsertTripRecord(db, newTrip.TripID, newTrip.PickupPC, newTrip.DropoffPC, newTrip.DriverID, newTrip.PassengerID, newTrip.TripStatus)
 							w.WriteHeader(http.StatusCreated)
 							w.Write([]byte("201 - Trip added!"))
 							return
 						} else {
 							w.WriteHeader(http.StatusUnprocessableEntity)
-							w.Write([]byte("409 - Duplicate postal code"))
+							w.Write([]byte("409 - Duplicate trip ID"))
 							return
 						}
 					}
@@ -126,25 +124,34 @@ func trip(w http.ResponseWriter, r *http.Request) {
 		} else if r.Method == "PUT" {
 			var updateTrip Trip
 			reqBody, err := ioutil.ReadAll(r.Body)
+			defer r.Body.Close()
 			if err == nil {
-				json.Unmarshal(reqBody, &updateTrip)
-
-				if updateTrip.Pickup == "" {
+				err := json.Unmarshal(reqBody, &updateTrip)
+				if err != nil {
+					println(string(reqBody))
+					fmt.Printf("Error in JSON encoding. Error is %s", err)
+				}
+				if updateTrip.TripID == 0 && updateTrip.PassengerID == 0 && updateTrip.PassengerID == 0 {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("422 - Please supply trip information " + "information " + "in JSON format"))
 					return
 				} else {
-					if !validateTrips(db, updateTrip.PostalCode) {
+					if validateTrips(db, updateTrip.PassengerID, updateTrip.DriverID) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
-						w.Write([]byte("No trip found with: " + updateTrip.Pickup))
+						w.Write([]byte("No trip found!"))
 					} else {
-						EditTripRecord(db, updateTrip.PostalCode, updateTrip.Pickup, updateTrip.Dropoff, updateTrip.DriverID, updateTrip.PassengerID)
-						w.WriteHeader(http.StatusCreated)
-						w.Write([]byte("201 - Passenger updated!"))
+						if EditTripRecord(db, updateTrip.TripID, updateTrip.PickupPC, updateTrip.DropoffPC, updateTrip.DriverID, updateTrip.PassengerID, updateTrip.TripStatus) {
+							w.WriteHeader(http.StatusCreated)
+							w.Write([]byte("201 - Trip updated!"))
+						} else {
+							w.WriteHeader(http.StatusUnprocessableEntity)
+							w.Write([]byte("401 - Trip not updated!"))
+						}
 					}
 				}
 			}
 		}
+		//DELETE request but should not really work since you can't delete trips
 		if r.Method == "DELETE" {
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("404 - You are not able to delete your trip due to audit purposes"))
@@ -152,43 +159,83 @@ func trip(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateTrips(db *sql.DB, PSC int) bool {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Trip WHERE PostalCode= '%d'", PSC)
+//Validate the trips
+func validateTrips(db *sql.DB, PID int, DID int) bool {
+	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Trips WHERE PassengerID= '%d' OR DriverID='%d'", PID, DID)
 	results, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
 	}
 	var trip Trip
 	for results.Next() {
-		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
+		err = results.Scan(&trip.TripID, &trip.PickupPC, &trip.DropoffPC, &trip.DriverID, &trip.PassengerID, &trip.TripStatus)
 		if err != nil {
 			panic(err.Error())
-		} else if trip.PostalCode == PSC {
-			return true
+		} else if trip.TripStatus != "Finished" {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
-func GetAllTripsRecord(db *sql.DB, PKUP string, DRP string) Trip {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Trip WHERE Pickup= '%s' AND Dropoff='%s'", PKUP, DRP)
+//Get any free drivers who have 'Finished' their trip
+func GetFreeDriver(db *sql.DB) int {
+	query := fmt.Sprintf("SELECT Drivers.DriverID FROM Drivers INNER JOIN Trips ON Drivers.DriverID = Trips.DriverID WHERE Trips.TripStatus='Finished'")
 	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var DriverID int
+	for results.Next() {
+		err = results.Scan(&DriverID)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return DriverID
+}
+
+//Get all the trips in the database
+func GetAllTripsRecord(db *sql.DB, TID string) Trip {
+	//query := fmt.Sprintf("SELECT * FROM Trips WHERE TripID=?", TID)
+	fmt.Println(TID)
+	results, err := db.Query("SELECT * FROM Trips WHERE TripID=?", TID)
 	if err != nil {
 		panic(err.Error())
 	}
 	var trip Trip
 	for results.Next() {
-		err = results.Scan(&trip.PostalCode, &trip.Pickup, &trip.Dropoff, &trip.DriverID, &trip.PassengerID)
+		err = results.Scan(&trip.TripID, &trip.PickupPC, &trip.DropoffPC, &trip.DriverID, &trip.PassengerID, &trip.TripStatus)
 		if err != nil {
 			panic(err.Error())
 		}
 	}
+	//fmt.Println(trip)
 	return trip
 }
 
-func InsertTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID int) bool {
-	query := fmt.Sprintf("INSERT INTO Trip VALUES ('%d','%s','%s','%d','%d')",
-		PSC, PKUP, DRP, DID, PID)
+//Get the specific trips the passenger has been on
+func GetAllTrips(db *sql.DB, PID int) []Trip {
+	query := fmt.Sprintf("SELECT * FROM Trips WHERE PassengerID ='%d'", PID)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var trips []Trip
+	for results.Next() {
+		var trip Trip
+		err = results.Scan(&trip.TripID, &trip.PickupPC, &trip.DropoffPC, &trip.DriverID, &trip.PassengerID, &trip.TripStatus)
+		if err != nil {
+			panic(err.Error())
+		}
+		trips = append(trips, trip)
+	}
+	return trips
+}
+
+//Insert a new trip into the database
+func InsertTripRecord(db *sql.DB, TID int, PKPC string, DRPC string, DID int, PID int, TST string) bool {
+	query := fmt.Sprintf("INSERT INTO Trips VALUES ('%d','%s','%s','%d','%d')", TID, PKPC, DRPC, DID, PID, TST)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -196,9 +243,10 @@ func InsertTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID
 	return true
 }
 
-func EditTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID int) bool {
-	query := fmt.Sprintf("UPDATE Trip SET PostalCode='%d', Pickup='%s', Dropoff='%s', DriverID='%d', PassengerID='%d' WHERE PostalCode='%d'",
-		PSC, PKUP, DRP, DID, PID)
+//Edit existing trip in the database
+func EditTripRecord(db *sql.DB, TID int, PKPC string, DRPC string, DID int, PID int, TST string) bool {
+	query := fmt.Sprintf("UPDATE Trip SET TripID='%d', PickupPC='%s', DropoffPC='%s', DriverID='%d', PassengerID='%d', TripStatus='%s' WHERE TripID='%d'",
+		TID, PKPC, DRPC, DID, PID, TST)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -206,10 +254,12 @@ func EditTripRecord(db *sql.DB, PSC int, PKUP string, DRP string, DID int, PID i
 	return true
 }
 
-func DeleteTripRecord(db *sql.DB, PSC int) {
+//Delete any data from the database. Should not really work since you can't delete trips
+func DeleteTripRecord(db *sql.DB, TID int) {
 	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
 }
 
+//Main function for handling URL paths and handlers
 func main() {
 	trips = make(map[string]tripInfo)
 	router := mux.NewRouter()
@@ -217,6 +267,6 @@ func main() {
 	router.HandleFunc("/api/v1/trips/{tripid}", trip).Methods("GET", "PUT", "POST", "DELETE")
 	//router.HandleFunc("/api/v1/trips", alltrips)
 
-	fmt.Println("Listening at port 5000")
-	log.Fatal(http.ListenAndServe(":5000", router))
+	fmt.Println("Listening at port 5002")
+	log.Fatal(http.ListenAndServe(":5002", router))
 }

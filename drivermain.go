@@ -40,7 +40,7 @@ func dvalidKey(r *http.Request) bool {
 	}
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+func dhome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the Driver REST API!")
 }
 
@@ -75,6 +75,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 
 		//THE GET REQUEST FOR DRIVER
 		if r.Method == "GET" {
+			params := mux.Vars(r)
 			var getAllDrivers Drivers
 			reqBody, err := ioutil.ReadAll(r.Body)
 			defer r.Body.Close()
@@ -83,16 +84,15 @@ func driver(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else if getAllDrivers.FirstName != "" || getAllDrivers.Email != "" {
-					json.NewEncoder(w).Encode(GetDriverRecords(db, getAllDrivers.DriverID, getAllDrivers.Email))
-					w.WriteHeader(http.StatusAccepted)
-					return
 				} else {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("Invalid information!"))
 					return
 				}
 			}
+			json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"]))
+			w.WriteHeader(http.StatusAccepted)
+			return
 		}
 
 		//POST for creating new driver
@@ -118,7 +118,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 							return
 						} else {
 							w.WriteHeader(http.StatusUnprocessableEntity)
-							w.Write([]byte("409 - Duplicate Driver ID"))
+							w.Write([]byte("409 - Duplicate email"))
 							return
 						}
 					}
@@ -172,9 +172,9 @@ func validateDriverRecord(db *sql.DB, EML string) bool {
 	return false
 }
 
-func GetDriverRecords(db *sql.DB, DID int, EML string) Drivers {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Drivers WHERE DriverID= '%d' AND Email= '%s'", DID, EML)
-	results, err := db.Query(query)
+func GetDriverRecords(db *sql.DB, DID string) Drivers {
+	//query := fmt.Sprintf("SELECT * FROM Drivers WHERE DriverID= ?", DID)
+	results, err := db.Query("SELECT * FROM Drivers WHERE DriverID= ?", DID)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -211,10 +211,10 @@ func EditDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML str
 func main() {
 	drivers = make(map[string]driverInfo)
 	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/", home)
+	router.HandleFunc("/api/v1/", dhome)
 	router.HandleFunc("/api/v1/drivers/{driverid}", driver).Methods("GET", "PUT", "POST", "DELETE")
 	//router.HandleFunc("/api/v1/drivers", alldrivers)
 
-	fmt.Println("Listening at port 5000")
-	log.Fatal(http.ListenAndServe(":5000", router))
+	fmt.Println("Listening at port 5001")
+	log.Fatal(http.ListenAndServe(":5001", router))
 }

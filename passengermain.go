@@ -14,8 +14,8 @@ import (
 
 var passengers map[string]passengerInfo
 
-func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the REST API!")
+func phome(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the Passenger REST API!")
 }
 
 type passengerInfo struct {
@@ -60,6 +60,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if r.Method == "GET" {
+			params := mux.Vars(r)
 			var getAllPassengers Passengers
 			reqBody, err := ioutil.ReadAll(r.Body)
 			defer r.Body.Close()
@@ -68,16 +69,15 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else if getAllPassengers.FirstName != "" || getAllPassengers.Email != "" {
-					json.NewEncoder(w).Encode(GetPassengerRecord(db, getAllPassengers.PassengerID, getAllPassengers.Email))
-					w.WriteHeader(http.StatusAccepted)
-					return
 				} else {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("Invalid information!"))
 					return
 				}
 			}
+			json.NewEncoder(w).Encode(GetPassengerRecord(db, params["passengerid"]))
+			w.WriteHeader(http.StatusAccepted)
+			return
 		}
 
 		//POST for creating new passenger
@@ -95,7 +95,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("422 - Please supply passenger " + "information " + "in JSON format"))
 						return
-					} else {
+					} else { //Validate passenger. If
 						if !validatePassengerRecord(db, newPassenger.Email) {
 							InsertPassengerRecord(db, newPassenger.PassengerID, newPassenger.FirstName, newPassenger.LastName, newPassenger.PhoneNumber, newPassenger.Email)
 							w.WriteHeader(http.StatusCreated)
@@ -154,7 +154,7 @@ func allPassengers(w http.ResponseWriter, r *http.Request) {
 }
 
 func validatePassengerRecord(db *sql.DB, EML string) bool {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE Email= '%s'", EML)
+	query := fmt.Sprintf("SELECT * FROM Passengers WHERE Email= '%s'", EML)
 	results, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -171,9 +171,9 @@ func validatePassengerRecord(db *sql.DB, EML string) bool {
 	return false
 }
 
-func GetPassengerRecord(db *sql.DB, PID int, EML string) Passengers {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE PassengerID= '%d' AND Email= '%s'", PID, EML)
-	results, err := db.Query(query)
+func GetPassengerRecord(db *sql.DB, PID string) Passengers {
+	//query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE PassengerID=?", PID)
+	results, err := db.Query("SELECT * FROM Passengers WHERE PassengerID=?", PID)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -189,7 +189,6 @@ func GetPassengerRecord(db *sql.DB, PID int, EML string) Passengers {
 
 func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
 	query := fmt.Sprintf("INSERT INTO Passengers VALUES ('%d','%s','%s','%d','%s');", PID, FN, LN, PN, EML)
-
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -221,7 +220,7 @@ func main() {
 
 	passengers = make(map[string]passengerInfo)
 	router := mux.NewRouter()
-	router.HandleFunc("/api/v1/", home)
+	router.HandleFunc("/api/v1/", phome)
 	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods("GET", "PUT", "POST", "DELETE")
 
 	//router.HandleFunc("/api/v1/passengers/create", CreatePassenger).Methods("POST")
