@@ -19,12 +19,12 @@ type tripInfo struct {
 }
 
 type Trip struct {
-	TripID      int    `json:"TripID"`
-	PickupPC    string `json:"PickupPC"`
-	DropoffPC   string `json:"DropoffPC"`
-	DriverID    int    `json:"DriverID"`
-	PassengerID int    `json:"PassengerID"`
-	TripStatus  string `json:"TripStatus"`
+	TripID      int    `json:"tripid"`
+	PickupPC    string `json:"pickuppc"`
+	DropoffPC   string `json:"dropoffpc"`
+	DriverID    int    `json:"driverid"`
+	PassengerID int    `json:"passengerid"`
+	TripStatus  string `json:"tripstatus"`
 }
 
 func tvalidKey(r *http.Request) bool {
@@ -122,6 +122,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 			}
 			//PUT for creating or updating existing trips
 		} else if r.Method == "PUT" {
+			//params := mux.Vars(r)
 			var updateTrip Trip
 			reqBody, err := ioutil.ReadAll(r.Body)
 			defer r.Body.Close()
@@ -130,13 +131,8 @@ func trip(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				}
-				if updateTrip.TripID == 0 && updateTrip.PassengerID == 0 && updateTrip.PassengerID == 0 {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply trip information " + "information " + "in JSON format"))
-					return
 				} else {
-					if validateTrips(db, updateTrip.PassengerID, updateTrip.DriverID) {
+					if validateTrips(db, updateTrip.DriverID, updateTrip.PassengerID) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("No trip found!"))
 					} else {
@@ -235,8 +231,8 @@ func GetAllTrips(db *sql.DB, PID int) []Trip {
 
 //Insert a new trip into the database
 func InsertTripRecord(db *sql.DB, TID int, PKPC string, DRPC string, DID int, PID int, TST string) bool {
-	query := fmt.Sprintf("INSERT INTO Trips VALUES ('%d','%s','%s','%d','%d')", TID, PKPC, DRPC, DID, PID, TST)
-	_, err := db.Query(query)
+	//query := fmt.Sprintf("INSERT INTO Trips VALUES (?,'%s','%s','%d','%d')", TID, PKPC, DRPC, DID, PID, TST)
+	_, err := db.Query("INSERT INTO Trips VALUES (?, ?, ?, ?, ?, ?)", TID, PKPC, DRPC, DID, PID, TST)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -245,8 +241,7 @@ func InsertTripRecord(db *sql.DB, TID int, PKPC string, DRPC string, DID int, PI
 
 //Edit existing trip in the database
 func EditTripRecord(db *sql.DB, TID int, PKPC string, DRPC string, DID int, PID int, TST string) bool {
-	query := fmt.Sprintf("UPDATE Trip SET TripID='%d', PickupPC='%s', DropoffPC='%s', DriverID='%d', PassengerID='%d', TripStatus='%s' WHERE TripID='%d'",
-		TID, PKPC, DRPC, DID, PID, TST)
+	query := fmt.Sprintf("UPDATE Trips SET TripID='%d', PickupPC='%s', DropoffPC='%s', DriverID='%d', PassengerID='%d', TripStatus='%s' WHERE TripID='%d'", TID, PKPC, DRPC, DID, PID, TST)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
