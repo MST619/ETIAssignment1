@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
+    h1 {text-align: center;}
+    div {text-align: center;}
     body,h1,h2,h3,h4,h5,h6 {font-family: "Raleway", Arial, Helvetica, sans-serif}
     .myLink {display: none}
     </style>
@@ -20,6 +22,96 @@
         <!-- <a href="#" class="w3-bar-item w3-button w3-right w3-hover-red w3-text-grey"><i class="fa fa-search"></i></a> -->
     </div>
 
-    <center><h1>Welcome to the ride sharing API!</h1></center>
+    <h1>Welcome to the ride sharing API!</h1>
 
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript">
+        function Passenger(method, type, form) {
+            event.preventDefault();
+            const DataForm = new DataForm(form);
+            var object;
+            var url;
+            if (type == "GET") {
+                var phoneno, email;
+                for(let [name, value] of DataForm){
+                    if (name == "Email") { 
+                        email = value
+                    } else {phoneno = value}
+                }
+                console.log(phoneno)
+                url = "http://localhost:5000/api/v1/passengers/"+phoneno+"/"+email+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+                console.log(url)
+            }else if (type == "POST" || type == "PUT"){
+                object = JSON.stringify(Object.form(DataForm));
+                url = "http://localhost:5000/api/v1/passengers/ / ?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+            }
+            $.ajax({
+                type: type,
+                url: url,
+                dataType: "json",
+                data: object,
+                contentType: "application/json",
+                success: function (data, textStatus, jqXHR){
+                    var table = $("<table><tr><th>"+metPhoneNumberhod+"</th></tr>");
+                    if (type == "GET") {
+                        table.append("<tr><td>PassengerID:</td><td>" + data.PassengerID + "</td></tr>");
+                        table.append("<tr><td>FirstName:</td><td>" + data["FirstName"] + "</td></tr>");
+                        table.append("<tr><td>LastName:</td><td>" + data["LastName"] + "</td></tr>");
+                        table.append("<tr><td>:</td><td>" + data["PhoneNumber"] + "</td></tr>");
+                        table.append("<tr><td>Email:</td><td>" + data["Email"] + "</td></tr>");
+                    }
+                    $("#message").html(table);
+                },
+                error: function (jqXHR, textStatus, data) {
+                    $("#message").empty();
+                    if (type == "POST" || type == "PUT"){
+                        var table = $("<table><tr><th>"+jqXHR.responseText+"</th></tr>");
+                        $("#message").html(table);
+                    } else {
+                        alert("Result:" + textStatus + "" + error + "" + jqXHR.textStatus + "" + jqXHR.statusText + "" + jqXHR.responseText);
+                    }
+                    $("#message").show();
+                }
+            });
+        };
+        function switchForm(optionValue){
+            $(".container").hide();
+            $("#message").hide();
+            var content = "#"+optionValue.value;
+            $(content).show();
+        }
+    </script>
+    <body>
+        <div>
+            <select id="TripsOptions" onchange="ChangeForm(this)">
+                <option value="GET" selected="selected">Get Passenger</option>
+                <option value="POST">Create Passenger</option>
+                <option value="PUT">Update Passenger</option>
+            </select>
+        </div>
+
+        <div id="GET">
+            <h1>Get Passenger</h1>
+            <h3>Get passsenger by email and password</h3>
+            <form onsubmit="Passenger('GetPassengerRecord', 'GET', this);">
+                <div>
+                    <label for="Email">Passenger Email</label>
+                     <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter Email" value="noice@gmail.com">
+                </div>
+            <br>
+                <div>
+                    <label for="PhoneNumber">Password</label>
+                    <input type="text" class="form-control" name="PhoneNumber" id="PhoneNumber" placeholder="Enter PhoneNumber" value="99998888">
+                </div>
+            </br>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+        <br>
+        
+        <div>
+            
+        </div>
+
+    </body>
 </html>
