@@ -65,36 +65,36 @@ func driver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-type") == "application/json" {
-		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
-		if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Println("Driver database opened!")
-		}
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Driver database opened!")
+	}
 
-		//THE GET REQUEST FOR DRIVER
-		if r.Method == "GET" {
-			params := mux.Vars(r)
-			var getAllDrivers Drivers
-			reqBody, err := ioutil.ReadAll(r.Body)
-			defer r.Body.Close()
-			if err == nil {
-				err := json.Unmarshal(reqBody, &getAllDrivers)
-				if err != nil {
-					println(string(reqBody))
-					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("Invalid information!"))
-					return
-				}
+	//THE GET REQUEST FOR DRIVER
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllDrivers Drivers
+		reqBody, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllDrivers)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
 			}
-			json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"]))
-			w.WriteHeader(http.StatusAccepted)
-			return
 		}
+		json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
 
+	if r.Header.Get("Content-type") == "application/json" {
 		//POST for creating new driver
 		if r.Method == "POST" {
 			var newDriver Drivers

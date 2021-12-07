@@ -141,14 +141,14 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func allPassengers(w http.ResponseWriter, r *http.Request) {
-// 	kv := r.URL.Query()
-// 	for k, v := range kv {
-// 		fmt.Println(k, v)
-// 	}
-// 	//returns all the passengers in JSON
-// 	json.NewEncoder(w).Encode(passengers)
-// }
+func allPassengers(w http.ResponseWriter, r *http.Request) {
+	kv := r.URL.Query()
+	for k, v := range kv {
+		fmt.Println(k, v)
+	}
+	//returns all the passengers in JSON
+	json.NewEncoder(w).Encode(passengers)
+}
 
 func validatePassengerRecord(db *sql.DB, EML string) bool {
 	query := fmt.Sprintf("SELECT * FROM Passengers WHERE Email= '%s'", EML)
