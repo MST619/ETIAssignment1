@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -51,35 +52,35 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Header.Get("Content-type") == "application/json" {
-		db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
-		if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Println("Database opened!")
-		}
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened!")
+	}
 
-		if r.Method == "GET" {
-			params := mux.Vars(r)
-			var getAllPassengers Passengers
-			reqBody, err := ioutil.ReadAll(r.Body)
-			defer r.Body.Close()
-			if err == nil {
-				err := json.Unmarshal(reqBody, &getAllPassengers)
-				if err != nil {
-					println(string(reqBody))
-					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("Invalid information!"))
-					return
-				}
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllPassengers Passengers
+		reqBody, err := ioutil.ReadAll(r.Body)
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllPassengers)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
 			}
-			json.NewEncoder(w).Encode(GetPassengerRecord(db, params["passengerid"]))
-			w.WriteHeader(http.StatusAccepted)
-			return
 		}
+		json.NewEncoder(w).Encode(GetPassengerRecord(db, params["passengerid"], params["email"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
 
+	if r.Header.Get("Content-type") == "application/json" {
 		//POST for creating new passenger
 		if r.Method == "POST" {
 			var newPassenger Passengers
@@ -95,9 +96,9 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("422 - Please supply passenger " + "information " + "in JSON format"))
 						return
-					} else { //Validate passenger. If
+					} else { //Validate passenger.
 						if !validatePassengerRecord(db, newPassenger.Email) {
-							InsertPassengerRecord(db, newPassenger.PassengerID, newPassenger.FirstName, newPassenger.LastName, newPassenger.PhoneNumber, newPassenger.Email)
+							InsertPassengerRecord(db, newPassenger)
 							w.WriteHeader(http.StatusCreated)
 							w.Write([]byte("201 - Passenger added!"))
 							return
@@ -110,6 +111,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else if r.Method == "PUT" {
+			fmt.Println("put called")
 			var updatePassenger Passengers
 			reqBody, err := ioutil.ReadAll(r.Body)
 			if err == nil {
@@ -124,9 +126,10 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("No passenger found with: " + updatePassenger.Email))
 					} else {
-						EditPassengeRecord(db, updatePassenger.PassengerID, updatePassenger.FirstName, updatePassenger.LastName, updatePassenger.PhoneNumber, updatePassenger.Email)
+						EditPassengerRecord(db, updatePassenger.PassengerID, updatePassenger.FirstName, updatePassenger.LastName, updatePassenger.PhoneNumber, updatePassenger.Email)
 						w.WriteHeader(http.StatusCreated)
 						w.Write([]byte("201 - Passenger updated!"))
+						return
 					}
 				}
 			}
@@ -138,20 +141,14 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func allPassengers(w http.ResponseWriter, r *http.Request) {
-	//fmt.Fprintln(w, "List of all passengers")
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(http.StatusOK)
-	// json.NewEncoder(w).Encode(passengers)
-
-	kv := r.URL.Query()
-
-	for k, v := range kv {
-		fmt.Println(k, v)
-	}
-	//returns all the passengers in JSON
-	json.NewEncoder(w).Encode(passengers)
-}
+// func allPassengers(w http.ResponseWriter, r *http.Request) {
+// 	kv := r.URL.Query()
+// 	for k, v := range kv {
+// 		fmt.Println(k, v)
+// 	}
+// 	//returns all the passengers in JSON
+// 	json.NewEncoder(w).Encode(passengers)
+// }
 
 func validatePassengerRecord(db *sql.DB, EML string) bool {
 	query := fmt.Sprintf("SELECT * FROM Passengers WHERE Email= '%s'", EML)
@@ -171,9 +168,9 @@ func validatePassengerRecord(db *sql.DB, EML string) bool {
 	return false
 }
 
-func GetPassengerRecord(db *sql.DB, PID string) Passengers {
+func GetPassengerRecord(db *sql.DB, PID string, EML string) Passengers {
 	//query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE PassengerID=?", PID)
-	results, err := db.Query("SELECT * FROM Passengers WHERE PassengerID=?", PID)
+	results, err := db.Query("SELECT * FROM Passengers WHERE PassengerID=? AND Email=?", PID, EML)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -187,8 +184,9 @@ func GetPassengerRecord(db *sql.DB, PID string) Passengers {
 	return passenger
 }
 
-func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
-	query := fmt.Sprintf("INSERT INTO Passengers VALUES ('%d','%s','%s','%d','%s');", PID, FN, LN, PN, EML)
+func InsertPassengerRecord(db *sql.DB, passenger Passengers) bool {
+	query := fmt.Sprintf("INSERT INTO Passengers (PassengerID, FirstName, LastName, PhoneNumber, Email) VALUES ('%d','%s','%s','%d','%s');",
+		passenger.PassengerID, passenger.FirstName, passenger.LastName, passenger.PhoneNumber, passenger.Email)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -196,7 +194,7 @@ func InsertPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EM
 	return true
 }
 
-func EditPassengeRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
+func EditPassengerRecord(db *sql.DB, PID int, FN string, LN string, PN int, EML string) bool {
 	query := fmt.Sprintf("UPDATE Passengers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s' WHERE PassengerID=%d", FN, LN, PN, EML, PID)
 	_, err := db.Query(query)
 	if err != nil {
@@ -210,27 +208,15 @@ func DeletePassengers(db *sql.DB, PID int) {
 }
 
 func main() {
-	// db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
-
-	// if err != nil {
-	// 	panic(err.Error())
-	// } else {
-	// 	fmt.Println("Database opened")
-	// }
 
 	passengers = make(map[string]passengerInfo)
 	router := mux.NewRouter()
+	headers := handlers.AllowedHeaders([]string{"X-REQUESTED-With", "Content-Type"})
+	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
+	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", phome)
-	router.HandleFunc("/api/v1/passengers/{passengerid}", passenger).Methods("GET", "PUT", "POST", "DELETE")
-
-	//router.HandleFunc("/api/v1/passengers/create", CreatePassenger).Methods("POST")
-	//router.HandleFunc("/api/v1/passengers/get", GetAllPassengers).Methods("GET")
-	//router.HandleFunc("/api/v1/passengers", allPassengers)
+	router.HandleFunc("/api/v1/passengers/{passengerid}/{email}", passenger).Methods("GET", "PUT", "POST", "DELETE")
 
 	fmt.Println("Listening at port 5000")
-	log.Fatal(http.ListenAndServe(":5000", router))
-
-	//InsertPassengerRecord(db)
-	//EditPassengeRecord(db)
-	//getPassengerRecords(db)
+	log.Fatal(http.ListenAndServe(":5000", handlers.CORS(headers, methods, origins)(router)))
 }
