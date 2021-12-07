@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
@@ -44,13 +45,13 @@ func dhome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the Driver REST API!")
 }
 
-func alldrivers(w http.ResponseWriter, r *http.Request) {
-	kv := r.URL.Query()
-	for k, v := range kv {
-		fmt.Println(k, v)
-	}
-	json.NewEncoder(w).Encode(drivers)
-}
+// func alldrivers(w http.ResponseWriter, r *http.Request) {
+// 	kv := r.URL.Query()
+// 	for k, v := range kv {
+// 		fmt.Println(k, v)
+// 	}
+// 	json.NewEncoder(w).Encode(drivers)
+// }
 
 //Main func for driver to call the requests, GET, PUT, POST, and DELETE
 func driver(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +90,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"]))
+		json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"], params["email"]))
 		w.WriteHeader(http.StatusAccepted)
 		return
 	}
@@ -112,7 +113,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 						return
 					} else {
 						if !validateDriverRecord(db, newDriver.Email) {
-							InsertDriverRecord(db, newDriver.DriverID, newDriver.FirstName, newDriver.LastName, newDriver.PhoneNumber, newDriver.Email, newDriver.LicenseNo)
+							InsertDriverRecord(db, newDriver)
 							w.WriteHeader(http.StatusCreated)
 							w.Write([]byte("201 - Driver added!"))
 							return
@@ -172,9 +173,9 @@ func validateDriverRecord(db *sql.DB, EML string) bool {
 	return false
 }
 
-func GetDriverRecords(db *sql.DB, DID string) Drivers {
+func GetDriverRecords(db *sql.DB, DID string, EML string) Drivers {
 	//query := fmt.Sprintf("SELECT * FROM Drivers WHERE DriverID= ?", DID)
-	results, err := db.Query("SELECT * FROM Drivers WHERE DriverID= ?", DID)
+	results, err := db.Query("SELECT * FROM Drivers WHERE DriverID=? AND Email=?", DID, EML)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -188,9 +189,9 @@ func GetDriverRecords(db *sql.DB, DID string) Drivers {
 	return driver
 }
 
-func InsertDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML string, LCN int) bool {
-	query := fmt.Sprintf("INSERT INTO Drivers VALUES ('%d', '%s', '%s', '%d', '%s', '%d');",
-		DID, FN, LN, PN, EML, LCN)
+func InsertDriverRecord(db *sql.DB, driver Drivers) bool {
+	query := fmt.Sprintf("INSERT INTO Drivers (DriverID, FirstName, LastName, PhoneNumber, Email, LicenseNo) VALUES ('%d','%s','%s','%d','%s','%d');",
+		driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -211,10 +212,13 @@ func EditDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML str
 func main() {
 	drivers = make(map[string]driverInfo)
 	router := mux.NewRouter()
+	headers := handlers.AllowedHeaders([]string{"X-REQUESTED-With", "Content-Type"})
+	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
+	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", dhome)
-	router.HandleFunc("/api/v1/drivers/{driverid}", driver).Methods("GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/drivers/{driverid}/{email}", driver).Methods("GET", "PUT", "POST", "DELETE")
 	//router.HandleFunc("/api/v1/drivers", alldrivers)
 
 	fmt.Println("Listening at port 5001")
-	log.Fatal(http.ListenAndServe(":5001", router))
+	log.Fatal(http.ListenAndServe(":5001", handlers.CORS(headers, methods, origins)(router)))
 }

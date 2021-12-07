@@ -17,8 +17,8 @@
 
     <!-- Navigation Bar -->
     <div class="w3-bar w3-white w3-border-bottom w3-xlarge">
-        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\ETI Ride Sharing.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Passenger</b></a>
-        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\Driver.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Driver</b></a>
+        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\HTML\Passenger\ETI Ride Sharing.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Passenger</b></a>
+        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\HTML\Driver\Driver.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Driver</b></a>
         <a href="#" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Trip</b></a>
     </div>
 
@@ -42,9 +42,19 @@
                 url = "http://localhost:5001/api/v1/drivers/"+driverid+"/"+email+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
                 console.log(url)
             }else if (type == "POST" || type == "PUT"){
-                object = JSON.stringify(Object.form(DataForm));
-                url = "http://localhost:5001/api/v1/drivers/ / ?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+                //object = JSON.stringify(Object.form(DataForm));
+                var object = {
+                    "DriverID":parseInt(DataForm.get("DriverID")),
+                    "FirstName": DataForm.get("FirstName"),
+                    "LastName": DataForm.get("LastName"),
+                    "PhoneNumber": parseInt(DataForm.get("PhoneNumber")),
+                    "Email": DataForm.get("Email"),
+                    "LicenseNo": parseInt(DataForm.get("LicenseNo"))
+                };
+                object = JSON.stringify(object)
+                url = "http://localhost:5001/api/v1/drivers/"+driverid+"/"+email+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
             }
+            console.log(object)
             $.ajax({
                 type: type,
                 url: url,
@@ -54,12 +64,12 @@
                 success: function (data, textStatus, jqXHR){
                     var table = $("<table><tr><th>"+method+"</th></tr>");
                     if (type == "GET") {
-                        table.append("<tr><td>PassengerID:</td><td>" + data.Driverid + "</td></tr>");
+                        table.append("<tr><td>DriverID:</td><td>" + data.DriverID + "</td></tr>");
                         table.append("<tr><td>FirstName:</td><td>" + data["FirstName"] + "</td></tr>");
                         table.append("<tr><td>LastName:</td><td>" + data["LastName"] + "</td></tr>");
                         table.append("<tr><td>PhoneNumber:</td><td>" + data["PhoneNumber"] + "</td></tr>");
                         table.append("<tr><td>Email:</td><td>" + data["Email"] + "</td></tr>");
-                        table.append("<tr><td>LicenseNo:</td><td" + data["LicenseNo"] + "</td></tr>")
+                        table.append("<tr><td>LicenseNo:</td><td>" + data["LicenseNo"] + "</td></tr>")
                     }
                     $("#message").html(table);
                 },
@@ -94,15 +104,15 @@
         <div class="container" id="GET">
             <h1>Get Driver</h1>
             <h3>Get driver by driver ID and email</h3>
-            <form onsubmit="Passenger('GetPassengerRecord', 'GET', this);">
+            <form onsubmit="Driver('GetDriverRecord', 'GET', this);">
                 <div>
-                    <label for="PassengerID">Driver ID:</label>
-                    <input type="text" class="form-control" name="PassengerID" id="PassengerID" placeholder="Enter your passenger id" value="1">
+                    <label for="DriverID">Driver ID:</label>
+                    <input type="text" class="form-control" name="DriverID" id="DriverID" placeholder="Enter your DriverID" value="1">
                 </div>
             <br>
                 <div>
                     <label for="Email">Email:</label>
-                    <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter email" value="noice@gmail.com">
+                    <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter email" value="mv33@gmail.com">
                 </div>
             <br>
                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -111,7 +121,12 @@
 
             <div class="container" id="POST">
                 <h1>Create Driver</h1>
-                <form onsubmit="Passenger('InsertPassengerRecord', 'POST', this);">
+                <form onsubmit="Driver('InsertDriverRecord', 'POST', this);">
+                    <div>
+                        <label for="DriverID">Driver ID:</label>
+                        <input type="text" class="form-control" name="DriverID" id="DriverID" placeholder="Enter your DriverID" value="1">
+                    </div>
+                    <br>
                     <div>
                         <label for="FirstName">First Name:</label>
                         <input type="text" class="form-control" name="FirstName" id="FirstName" placeholder="Enter your first name">
@@ -127,13 +142,28 @@
                         <input type="text" class="form-control" name="PhoneNumber" id="PhoneNumber" placeholder="Enter your phone no">
                     </div>
                     </br>
+                    <div>
+                        <label for="Email">Email:</label>
+                        <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter email" value="mv33@gmail.com">
+                    </div>
+                    <br>
+                    <div>
+                        <label for="LicenseNo">License No:</label>
+                        <input type="text" class="form-control" name="LicenseNo" id="LicenseNo" placeholder="Enter your LicenseNo">
+                    </div>
+                    <br>
                 <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
 
             <div class="container" id="PUT">
                 <h1>Update Driver</h1>
-                <form onsubmit="Passenger('EditPassengerRecord', 'PUT', this);">
+                <form onsubmit="Driver('EditDriverRecord', 'PUT', this);">
+                    <div>
+                        <label for="DriverID">Driver ID:</label>
+                        <input type="text" class="form-control" name="DriverID" id="DriverID" placeholder="Enter your DriverID" value="1">
+                    </div>
+                    <br>
                     <div>
                         <label for="FirstName">First Name:</label>
                         <input type="text" class="form-control" name="FirstName" id="FirstName" placeholder="Enter your first name">
@@ -149,7 +179,17 @@
                         <input type="text" class="form-control" name="PhoneNumber" id="PhoneNumber" placeholder="Enter your phone no">
                     </div>
                     <br>
-                    <button type="submit" class="btn btn-primary"> Submit</button>
+                    <div>
+                            <label for="Email">Email:</label>
+                            <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter email">
+                    </div>
+                    <br>
+                    <div>
+                        <label for="LicenseNo">License No:</label>
+                        <input type="text" class="form-control" name="LicenseNo" id="LicenseNo" placeholder="Enter your LicenseNo">
+                    </div>
+                    <br>
+                    <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
             <br>

@@ -27,6 +27,23 @@ type Trip struct {
 	TripStatus  string `json:"tripstatus"`
 }
 
+type Passengers struct {
+	PassengerID int    `json:"PassengerID"`
+	FirstName   string `json:"FirstName"`
+	LastName    string `json:"LastName"`
+	PhoneNumber int    `json:"PhoneNumber"`
+	Email       string `json:"Email"`
+}
+
+type Drivers struct {
+	DriverID    int    `json:"DriverID"`
+	FirstName   string `json:"FirstName"`
+	LastName    string `json:"LastName"`
+	PhoneNumber int    `json:"PhoneNumber"`
+	Email       string `json:"Email"`
+	LicenseNo   int    `json:"LicenseNo"`
+}
+
 func tvalidKey(r *http.Request) bool {
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {

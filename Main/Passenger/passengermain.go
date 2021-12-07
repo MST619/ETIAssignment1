@@ -110,6 +110,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
+			//PUT for creating or updating existing passengers
 		} else if r.Method == "PUT" {
 			fmt.Println("put called")
 			var updatePassenger Passengers
