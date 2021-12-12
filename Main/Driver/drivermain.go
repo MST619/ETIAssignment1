@@ -13,14 +13,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// used for storing drivers on the REST API
 var drivers map[string]driverInfo
 
 type driverInfo struct {
 	Title string `json:"Driver"`
 }
 
+//Collections of fields for Driver and also to map this type to the record in the table
 type Drivers struct {
-	DriverID    int    `json:"DriverID"`
+	DriverID    string `json:"DriverID"`
 	FirstName   string `json:"FirstName"`
 	LastName    string `json:"LastName"`
 	PhoneNumber int    `json:"PhoneNumber"`
@@ -28,7 +30,9 @@ type Drivers struct {
 	LicenseNo   int    `json:"LicenseNo"`
 }
 
+//Access token used for securing the REST API
 func dvalidKey(r *http.Request) bool {
+	// returns the key/value pairs in the query string as a map object
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {
 		if key[0] == "2c78afaf-97da-4816-bbee-9ad239abb296" {
@@ -45,20 +49,8 @@ func dhome(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the Driver REST API!")
 }
 
-// func alldrivers(w http.ResponseWriter, r *http.Request) {
-// 	kv := r.URL.Query()
-// 	for k, v := range kv {
-// 		fmt.Println(k, v)
-// 	}
-// 	json.NewEncoder(w).Encode(drivers)
-// }
-
 //Main func for driver to call the requests, GET, PUT, POST, and DELETE
 func driver(w http.ResponseWriter, r *http.Request) {
-	//params := mux.Vars(r)
-	// fmt.Fprintf(w, "Detail for driver "+params["driverid"])
-	// fmt.Fprintf(w, "\n")
-	// fmt.Fprintf(w, r.Method)
 
 	if !dvalidKey(r) {
 		w.WriteHeader(http.StatusNotFound)
@@ -76,11 +68,11 @@ func driver(w http.ResponseWriter, r *http.Request) {
 	//THE GET REQUEST FOR DRIVER
 	if r.Method == "GET" {
 		params := mux.Vars(r)
-		var getAllDrivers Drivers
+		var getDrivers Drivers
 		reqBody, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err == nil {
-			err := json.Unmarshal(reqBody, &getAllDrivers)
+			err := json.Unmarshal(reqBody, &getDrivers)
 			if err != nil {
 				println(string(reqBody))
 				fmt.Printf("Error in JSON encoding. Error is %s", err)
@@ -141,7 +133,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("No driver found with: " + updateDriver.Email))
 					} else {
-						EditDriverRecord(db, updateDriver.DriverID, updateDriver.FirstName, updateDriver.LastName, updateDriver.PhoneNumber, updateDriver.Email, updateDriver.LicenseNo)
+						EditDriverRecord(db, updateDriver)
 						w.WriteHeader(http.StatusCreated)
 						w.Write([]byte("201 - Driver updated!"))
 					}
@@ -155,8 +147,81 @@ func driver(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetAllDriverRecords(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		fmt.Println(err)
+	}
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte(GetFreeDriver(db)))
+}
+
+func validateDriver(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		fmt.Println(err)
+	}
+	params := mux.Vars(r)
+	if params["email"] == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("422 - Please supply driver email " + "information " + "in JSON format"))
+		return
+	} else if validateDriverRecord(db, params["email"]) {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(validateDriverEmail(db, params["email"])))
+	} else {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+	}
+}
+
+func GetDriverID(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		fmt.Println(err)
+	}
+	params := mux.Vars(r)
+	if params["driverid"] == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("422 - Please supply driver ID " + "information " + "in JSON format"))
+		return
+	} else {
+		println(params["driverid"])
+		query := fmt.Sprintf("SELECT LicenseNo FROM Drivers WHERE DriverID='%s'", params["driverid"])
+		results, err := db.Query(query)
+		if err != nil {
+			panic(err.Error())
+		}
+		var LicenseNo string
+		for results.Next() {
+			err = results.Scan(&LicenseNo)
+			if err != nil {
+				panic(err.Error())
+			}
+		}
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(LicenseNo))
+		return
+	}
+}
+
+func validateDriverEmail(db *sql.DB, EML string) string {
+	query := fmt.Sprintf("SELECT * FROM Drivers WHERE Email= '%s'", EML)
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var driver Drivers
+	for results.Next() {
+		err = results.Scan(&driver.DriverID, &driver.FirstName, &driver.LastName, &driver.PhoneNumber, &driver.Email, &driver.LicenseNo)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return driver.DriverID
+}
+
 func validateDriverRecord(db *sql.DB, EML string) bool {
-	query := fmt.Sprintf("SELECT * FROM ETIAsgn.Drivers WHERE Email= '%s'", EML)
+	query := fmt.Sprintf("SELECT * FROM Drivers WHERE Email= '%s'", EML)
 	results, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
@@ -190,7 +255,7 @@ func GetDriverRecords(db *sql.DB, DID string, EML string) Drivers {
 }
 
 func InsertDriverRecord(db *sql.DB, driver Drivers) bool {
-	query := fmt.Sprintf("INSERT INTO Drivers (DriverID, FirstName, LastName, PhoneNumber, Email, LicenseNo) VALUES ('%d','%s','%s','%d','%s','%d');",
+	query := fmt.Sprintf("INSERT INTO Drivers (DriverID, FirstName, LastName, PhoneNumber, Email, LicenseNo) VALUES ('%s','%s','%s','%d','%s','%d');",
 		driver.DriverID, driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo)
 	_, err := db.Query(query)
 	if err != nil {
@@ -199,14 +264,32 @@ func InsertDriverRecord(db *sql.DB, driver Drivers) bool {
 	return true
 }
 
-func EditDriverRecord(db *sql.DB, DID int, FN string, LN string, PN int, EML string, LCN int) bool {
-	query := fmt.Sprintf("UPDATE Drivers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s', LicenseNo='%d' WHERE DriverID='%d'",
-		FN, LN, PN, EML, LCN, DID)
+func EditDriverRecord(db *sql.DB, driver Drivers) bool {
+	query := fmt.Sprintf("UPDATE Drivers SET FirstName='%s', LastName='%s', PhoneNumber=%d, Email='%s', LicenseNo='%d' WHERE DriverID='%s'",
+		driver.FirstName, driver.LastName, driver.PhoneNumber, driver.Email, driver.LicenseNo, driver.DriverID)
 	_, err := db.Query(query)
 	if err != nil {
 		panic(err.Error())
 	}
 	return true
+}
+
+func GetFreeDriver(db *sql.DB) string {
+	query := "SELECT DriverID FROM Drivers"
+	results, err := db.Query(query)
+	if err != nil {
+		panic(err.Error())
+	}
+	var DID string
+	for results.Next() {
+		var ID string
+		err = results.Scan(&ID)
+		if err != nil {
+			panic(err.Error())
+		}
+		DID += ID + ","
+	}
+	return DID
 }
 
 func main() {
@@ -216,6 +299,9 @@ func main() {
 	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
 	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", dhome)
+	router.HandleFunc("/api/v1/GetAllDriverRecords", GetAllDriverRecords)
+	router.HandleFunc("/api/v1/validateDriverRecord/{email}", validateDriver)
+	router.HandleFunc("/api/v1/GetDriver/{driverid}", GetDriverID)
 	router.HandleFunc("/api/v1/drivers/{driverid}/{email}", driver).Methods("GET", "PUT", "POST", "DELETE")
 	//router.HandleFunc("/api/v1/drivers", alldrivers)
 
