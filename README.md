@@ -18,17 +18,18 @@ The overall objective of this assignment was to demonstrate the ability to devel
 and to make conscientious consideration in designing microservices. 
 For this particular assignment, there were three microservices: 
 
-1. Passenger
+1. Passenger  
 The passenger microservice makes use of the POST, GET, and PUT HTTP method.
 
-2. Driver
+2. Driver  
 The driver microservice also makes use of the POST, GET and PUT HTTP method.
  
-3. Trip 
+3. Trip  
 The trip microservice has it's own POST, GET and PUT method but also makes use of
 the Passenger and Driver microservices by calling them. 
 
 ## Archicture Diagram
+
 
 ## Setup Instructions 
 1. Download [GO](https://go.dev/dl/) and [MySQL Community Edition](https://dev.mysql.com/downloads/installer/) database.
@@ -40,7 +41,8 @@ GRANT ALL ON *.* TO 'user'@'localhost'
  
 ```
 This will create an account named user with the password 'password'.
-4. Run the `Create ETIAsgn database.sql` file, section by section.
+
+4. Run the `ETIAsgn database.sql` file, section by section.
 
 
 
