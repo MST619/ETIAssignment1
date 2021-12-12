@@ -12,11 +12,19 @@ The assignment is built with the following:
 5. MySQL database
 
 ## Design Considerations
+The first point to note is that microservices are only supposed to have one responsibility. Each microservice would be in charge of CRUDing (Creating, Reading, Updating, and Deleting) or GET, POST, PUT and DELETE for their HTTP counterppart for their respective data types from their databases in this example.
+
+E.g. Passenger microservice would only be responsible for GETTING, POSTING, PUTTING, and DELETING passengers. 
+
+Another factor to consider was that microservices must be loosely linked. (to be continued)
+Loosely connected architectures (also known as Microservices) are lean, with a single responsibility and few dependencies, allowing teams to work independently, deploy alone, fail independently, and expand independently, resulting in increased business responsiveness.
+
 The minimum requirements of this assignment required us to have at least 2 microservices.
 For this particular assignment, there are three microservices.
 The overall objective of this assignment was to demonstrate the ability to develop REST APIs
 and to make conscientious consideration in designing microservices. 
-For this particular assignment, there were three microservices: 
+
+For this particular assignment, there were three microservices. Each Microservice has its own database, which is responsible for data transfer for each of the object types. The data may then be transmitted and transferred back and forth through the multiple microservices using GET and POST HTTP requests once it has been queried out of the database. The functionality/logic and data management can then be handled within each Microservice, all while adhering to the loosely linked philosophy that Microservices is known for.
 
 1. Passenger  
 The passenger microservice makes use of the POST, GET, and PUT HTTP method.
