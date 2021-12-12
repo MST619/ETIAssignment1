@@ -29,7 +29,8 @@ The trip microservice has it's own POST, GET and PUT method but also makes use o
 the Passenger and Driver microservices by calling them. 
 
 ## Archicture Diagram
-
+Here is an architecture diagram to visualise how the application works and the relationship between the frontend, the microservices, and the database.  
+![ETI Ride Sharing Architecture diagram](https://raw.githubusercontent.com/MST619/ETIAssignment1/main/ETI%20architecture%20diagram2.png)
 
 ## Setup Instructions 
 1. Download [GO](https://go.dev/dl/) and [MySQL Community Edition](https://dev.mysql.com/downloads/installer/) database.
