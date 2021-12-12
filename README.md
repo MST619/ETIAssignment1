@@ -43,7 +43,26 @@ GRANT ALL ON *.* TO 'user'@'localhost'
 ```
 This will create an account named user with the password 'password'.
 
-4. Run the `ETIAsgn database.sql` file, section by section.
+4. Run the `ETIAsgn database.sql` file, section by section, ans step by step.
+
+5. Clone the repository. Install [GitHub desktop](https://desktop.github.com/) and/or follow the steps [here](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)
+
+## Utilising the code
+6. Install the relevant packages needed to run the code, with the exception of the "strconv" pacakge for drivermain.go:
+```
+"database/sql"
+"encoding/json"
+"fmt"
+"io/ioutil"
+"log"
+"net/http"
+"strconv"
+
+_ "github.com/go-sql-driver/mysql"
+"github.com/gorilla/handlers"
+"github.com/gorilla/mux"
+ 
+```
 
 
 
