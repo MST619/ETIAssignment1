@@ -83,7 +83,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("401 - Invalid key"))
 		return
 	}
-	//Database Connection
+	// Establishing the database Connection
 	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
 	if err != nil {
 		panic(err.Error())
@@ -132,24 +132,6 @@ func trip(w http.ResponseWriter, r *http.Request) {
 						w.Write([]byte("422 - Please supply trip " + "information " + "in JSON format"))
 						return
 					}
-					// newerTrip Trip
-
-					// var driver Drivers = GetAllDriverRecords()
-					// if driver.DriverID == 0 {
-					// 	w.WriteHeader(http.StatusUnprocessableEntity)
-					// 	w.Write([]byte("404 - Driver does not exist"))
-					// }
-
-					// newerTrip.PickupPC = newerTrip.PickupPC
-					// newerTrip.DropoffPC = newerTrip.DropoffPC
-					// //FreeDriverID := GetFreeDriver(db, GetAllDriverRecords())
-					// if FreeDriverID != 0 {
-					// 	newerTrip.DriverID = FreeDriverID
-					// } else {
-					// 	w.WriteHeader(http.StatusUnprocessableEntity)
-					// 	w.Write([]byte("404 - There are no free drivers at the moment"))
-					// 	return
-					// }
 
 					if validateTrips(db, newTrip.PassengerID, newTrip.DriverID) {
 						InsertTripRecord(db, newTrip)
@@ -165,7 +147,6 @@ func trip(w http.ResponseWriter, r *http.Request) {
 			}
 			//PUT for creating or updating existing trips
 		} else if r.Method == "PUT" {
-			//params := mux.Vars(r)
 			var updateTrip Trip
 			reqBody, err := ioutil.ReadAll(r.Body)
 
@@ -225,6 +206,7 @@ func validatePassengerRecord(PID int) int {
 	return 0
 }
 
+//Calling
 func GetAllDriverRecords() Drivers {
 	response, err := http.Get("http://localhost:5001/api/v1/GetAllDriverRecords/")
 	if err != nil {

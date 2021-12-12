@@ -65,11 +65,12 @@ func driver(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Driver database opened!")
 	}
 
-	//THE GET REQUEST FOR DRIVER
+	//THE GET REQUEST FOR DRIVER retrive data from the Database.
 	if r.Method == "GET" {
 		params := mux.Vars(r)
 		var getDrivers Drivers
 		reqBody, err := ioutil.ReadAll(r.Body)
+		// defer the close till after the main function has finished executing
 		defer r.Body.Close()
 		if err == nil {
 			err := json.Unmarshal(reqBody, &getDrivers)
@@ -92,6 +93,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
 			var newDriver Drivers
 			reqBody, err := ioutil.ReadAll(r.Body)
+			// defer the close till after the main function has finished executing
 			defer r.Body.Close()
 			if err == nil {
 				err := json.Unmarshal(reqBody, &newDriver)
@@ -124,7 +126,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				json.Unmarshal(reqbody, &updateDriver)
 
-				if updateDriver.FirstName == "" {
+				if updateDriver.FirstName == "" { //Check if the Driver's name is empty or not
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("422 - Please supply driver information " + "information " + "in JSON format"))
 					return
@@ -204,6 +206,7 @@ func GetDriverID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+//To check if whether there is a duplicate email in the system
 func validateDriverEmail(db *sql.DB, EML string) string {
 	query := fmt.Sprintf("SELECT * FROM Drivers WHERE Email= '%s'", EML)
 	results, err := db.Query(query)
@@ -220,6 +223,7 @@ func validateDriverEmail(db *sql.DB, EML string) string {
 	return driver.DriverID
 }
 
+//Function to validate whether a specific Driver exists.
 func validateDriverRecord(db *sql.DB, EML string) bool {
 	query := fmt.Sprintf("SELECT * FROM Drivers WHERE Email= '%s'", EML)
 	results, err := db.Query(query)
@@ -239,7 +243,6 @@ func validateDriverRecord(db *sql.DB, EML string) bool {
 }
 
 func GetDriverRecords(db *sql.DB, DID string, EML string) Drivers {
-	//query := fmt.Sprintf("SELECT * FROM Drivers WHERE DriverID= ?", DID)
 	results, err := db.Query("SELECT * FROM Drivers WHERE DriverID=? AND Email=?", DID, EML)
 	if err != nil {
 		panic(err.Error())
@@ -303,7 +306,6 @@ func main() {
 	router.HandleFunc("/api/v1/validateDriverRecord/{email}", validateDriver)
 	router.HandleFunc("/api/v1/GetDriver/{driverid}", GetDriverID)
 	router.HandleFunc("/api/v1/drivers/{driverid}/{email}", driver).Methods("GET", "PUT", "POST", "DELETE")
-	//router.HandleFunc("/api/v1/drivers", alldrivers)
 
 	fmt.Println("Listening at port 5001")
 	log.Fatal(http.ListenAndServe(":5001", handlers.CORS(headers, methods, origins)(router)))

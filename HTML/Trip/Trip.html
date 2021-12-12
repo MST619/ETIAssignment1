@@ -25,6 +25,7 @@
     <h1>Welcome to the ride sharing API!</h1>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <!-- javascript to handle the API  -->
     <script type="text/javascript">
         function Trip(method, type, form) {
             event.preventDefault();
@@ -83,6 +84,7 @@
                 }
             });
         };
+        // Will only show the form that the user has selected.
         function SwitchForm(optionValue){
             $(".container").hide();
             $("#message").hide();
@@ -100,6 +102,7 @@
             </select>
         </div>
 
+        <!-- The container that stores the GET form-->
         <div class="container" id="GET">
             <h1>Get Trip</h1>
             <h3>Get driver by trip ID</h3>
@@ -112,6 +115,8 @@
                 <button type="submit" class="btn btn-primary">Submit</button>
             </form>
         </div>
+
+        <!-- The container that stores the POST form-->
             <div class="container" id="POST">
                 <h1>Create Trip</h1>
                 <form onsubmit="Trip('InsertTripRecord', 'POST', this);">
@@ -149,6 +154,7 @@
                 </form>
             </div>
 
+            <!-- The container that stores the PUT form-->
             <div class="container" id="PUT">
                 <h1>Update Trip</h1>
                 <form onsubmit="Trip('EditTripRecord', 'PUT', this);">
@@ -186,9 +192,12 @@
                 </form>
             </div>
             <br>
+
+            <!-- Store the success/fail message in to show after user has clicked submitted -->
             <div id="message"></div>
     </body>
     <script>
+        // Will only show the form that the user has selected.
         $(".container").hide();
         $("#GET").show();
     </script>

@@ -42,7 +42,7 @@
                 console.log(passengerid)
                 url = "http://localhost:5000/api/v1/passengers/"+passengerid+"/"+email+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
                 console.log(url)
-            }else if (type == "POST" || type == "PUT"){
+            } else if (type == "POST" || type == "PUT"){
                 var object = {
                     "PassengerID": parseInt(DataForm.get("PassengerID")),
                     "FirstName": DataForm.get("FirstName"),
