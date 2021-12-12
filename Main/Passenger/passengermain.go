@@ -7,12 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
 
+// used for storing passengers on the REST API
 var passengers map[string]passengerInfo
 
 func phome(w http.ResponseWriter, r *http.Request) {
@@ -23,7 +25,7 @@ type passengerInfo struct {
 	Title string `json:"Passenger"`
 }
 
-//Collections of fields for Passengers
+//Collections of fields for Passengers and also to map this type to the record in the table
 type Passengers struct {
 	PassengerID int    `json:"PassengerID"`
 	FirstName   string `json:"FirstName"`
@@ -32,7 +34,9 @@ type Passengers struct {
 	Email       string `json:"Email"`
 }
 
+//Access token used for securing the REST API
 func pvalidKey(r *http.Request) bool {
+	// returns the key/value pairs in the query string as a map object
 	v := r.URL.Query()
 	if key, ok := v["key"]; ok {
 		if key[0] == "2c78afaf-97da-4816-bbee-9ad239abb296" {
@@ -45,6 +49,7 @@ func pvalidKey(r *http.Request) bool {
 	}
 }
 
+//Main func for passenger to call the requests, GET, PUT, POST, and DELETE
 func passenger(w http.ResponseWriter, r *http.Request) {
 	if !pvalidKey(r) {
 		w.WriteHeader(http.StatusNotFound)
@@ -59,10 +64,13 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Database opened!")
 	}
 
+	//THE GET request for passenger to retrive data from the Database.
 	if r.Method == "GET" {
 		params := mux.Vars(r)
 		var getAllPassengers Passengers
 		reqBody, err := ioutil.ReadAll(r.Body)
+
+		// defer the close till after the main function has finished executing
 		defer r.Body.Close()
 		if err == nil {
 			err := json.Unmarshal(reqBody, &getAllPassengers)
@@ -85,13 +93,15 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" {
 			var newPassenger Passengers
 			reqBody, err := ioutil.ReadAll(r.Body)
+
+			// defer the close till after the main function has finished executing
 			defer r.Body.Close()
 			if err == nil {
 				err := json.Unmarshal(reqBody, &newPassenger)
 				if err != nil {
 					println(string(reqBody))
 					fmt.Printf("Error in JSON encoding. Error is %s", err)
-				} else {
+				} else { //Check if passenger's email is empty or not
 					if newPassenger.Email == "" {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("422 - Please supply passenger " + "information " + "in JSON format"))
@@ -118,11 +128,12 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				json.Unmarshal(reqBody, &updatePassenger)
 
+				//Checking if the passenger's firstname is empty
 				if updatePassenger.FirstName == "" {
 					w.WriteHeader(http.StatusUnprocessableEntity)
 					w.Write([]byte("422 - Please supply passenger information " + "information " + "in JSON format"))
 					return
-				} else {
+				} else { //Checking to see if there is a existing passenger in the database
 					if !validatePassengerRecord(db, updatePassenger.Email) {
 						w.WriteHeader(http.StatusUnprocessableEntity)
 						w.Write([]byte("No passenger found with: " + updatePassenger.Email))
@@ -151,6 +162,7 @@ func allPassengers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(passengers)
 }
 
+//To check if whether there is a duplicate email in the system
 func validatePassengerRecord(db *sql.DB, EML string) bool {
 	query := fmt.Sprintf("SELECT * FROM Passengers WHERE Email= '%s'", EML)
 	results, err := db.Query(query)
@@ -169,8 +181,35 @@ func validatePassengerRecord(db *sql.DB, EML string) bool {
 	return false
 }
 
+//Function to validate whether a specific Passenger exists.
+func validatePassengerID(db *sql.DB, PID string) int {
+	query := fmt.Sprintf("SELECT * FROM Passengers WHERE PassengerID=%s", PID)
+	var passenger Passengers
+	row := db.QueryRow(query) //Method to execute the query and is expected to return a single row.
+	if err := row.Scan(&passenger.PassengerID, &passenger.FirstName, &passenger.LastName, &passenger.PhoneNumber, &passenger.Email); err != nil {
+		panic(err.Error())
+	} else {
+		return passenger.PassengerID
+	}
+}
+
+func validatePassenger(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	if err != nil {
+		fmt.Println(err)
+	}
+	params := mux.Vars(r)
+	if _, err := strconv.Atoi(params["id"]); err != nil { //Converting string to int
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("422 - Please supply passenger information " + "information " + "in JSON format"))
+		return
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(strconv.Itoa(validatePassengerID(db, params["id"])))) //Converting int to string
+	}
+}
+
 func GetPassengerRecord(db *sql.DB, PID string, EML string) Passengers {
-	//query := fmt.Sprintf("SELECT * FROM ETIAsgn.Passengers WHERE PassengerID=?", PID)
 	results, err := db.Query("SELECT * FROM Passengers WHERE PassengerID=? AND Email=?", PID, EML)
 	if err != nil {
 		panic(err.Error())
@@ -216,6 +255,7 @@ func main() {
 	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
 	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", phome)
+	router.HandleFunc("/api/v1/validatePassengerRecord/{id}", validatePassenger)
 	router.HandleFunc("/api/v1/passengers/{passengerid}/{email}", passenger).Methods("GET", "PUT", "POST", "DELETE")
 
 	fmt.Println("Listening at port 5000")
