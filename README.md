@@ -48,7 +48,7 @@ This will create an account named user with the password 'password'.
 5. Clone the repository. Install [GitHub desktop](https://desktop.github.com/) and/or follow the steps [here](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)
 
 ## Utilising the code
-6. Install the relevant packages needed to run the code, with the exception of the "strconv" pacakge for drivermain.go:
+1. Install the relevant packages needed to run the code, with the exception of the "strconv" pacakge for drivermain.go:
 ```
 "database/sql"
 "encoding/json"
@@ -63,7 +63,23 @@ _ "github.com/go-sql-driver/mysql"
 "github.com/gorilla/mux"
  
 ```
-
+2. To run the code, simply click on Run on whichever IDE you're utilising or using your command prompt, type the following:
+```
+cd ETIAssignment1\Main\Passenger
+go run passengermain.go
+ 
+```
+```
+cd ETIAssignment1\Main\Driver
+go run drivermain.go
+ 
+```
+```
+cd ETIAssignment1\Main\Trip
+go run tripmain.go
+ 
+```
+3. Once the microservices are running, open up the respective HTML pages. `ETI Ride Sharing.html` for the Passenger, `Driver.html` for driver, and `Trip.HTML` for the Trip. All of which can be found in `\ETIAssignment1\HTML`.
 
 
 

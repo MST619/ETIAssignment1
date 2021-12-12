@@ -25,6 +25,7 @@
     <h1>Welcome to the ride sharing API!</h1>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <!-- javascript to handle the API  -->
     <script type="text/javascript">
         function Passenger(method, type, form) {
             event.preventDefault();
@@ -42,7 +43,6 @@
                 url = "http://localhost:5000/api/v1/passengers/"+passengerid+"/"+email+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
                 console.log(url)
             }else if (type == "POST" || type == "PUT"){
-                // object = JSON.stringify(Object.form(DataForm));
                 var object = {
                     "PassengerID": parseInt(DataForm.get("PassengerID")),
                     "FirstName": DataForm.get("FirstName"),
@@ -82,6 +82,7 @@
                 }
             });
         };
+        // Will only show the form that the user has selected.
         function SwitchForm(optionValue){
             $(".container").hide();
             $("#message").hide();
@@ -98,6 +99,7 @@
             </select>
         </div>
 
+        <!-- The container that stores the GET form-->
         <div class="container" id="GET">
             <h1>Get Passenger</h1>
             <h3>Get passsenger by passenger ID and email</h3>
@@ -116,6 +118,7 @@
             </form>
         </div>
 
+        <!-- The container that stores the POST form-->
             <div class="container" id="POST">
                 <h1>Create Passenger</h1>
                 <form onsubmit="Passenger('InsertPassengerRecord', 'POST', this);">
@@ -148,6 +151,7 @@
                 </form>
             </div>
 
+            <!-- The container that stores the PUT form-->
             <div class="container" id="PUT">
                 <h1>Update Passenger</h1>
                 <form onsubmit="Passenger('EditPassengerRecord', 'PUT', this);">
@@ -180,9 +184,12 @@
                 </form>
             </div>
             <br>
+
+            <!-- Store the success/fail message in to show after user has clicked submitted -->
             <div id="message"></div>
     </body>
     <script>
+        // Will only show the form that the user has selected.
         $(".container").hide();
         $("#GET").show();
     </script>
