@@ -84,7 +84,7 @@ func trip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Establishing the database Connection
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		panic(err.Error())
 	} else {

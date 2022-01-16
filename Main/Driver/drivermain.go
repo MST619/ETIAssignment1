@@ -58,7 +58,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -150,7 +150,7 @@ func driver(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetAllDriverRecords(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -159,7 +159,7 @@ func GetAllDriverRecords(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateDriver(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -177,7 +177,7 @@ func validateDriver(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDriverID(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		fmt.Println(err)
 	}

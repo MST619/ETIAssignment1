@@ -56,7 +56,7 @@ This will create an account named user with the password 'password'.
 5. Clone the repository. Install [GitHub desktop](https://desktop.github.com/) and/or follow the steps [here](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/adding-and-cloning-repositories/cloning-and-forking-repositories-from-github-desktop)
 
 ## Utilising the code
-1. Install the relevant packages needed to run the code, with the exception of the "strconv" pacakge for drivermain.go:
+1. Install the relevant packages needed to run the code, with the exception of the "strconv" package for drivermain.go:
 ```
 "database/sql"
 "encoding/json"

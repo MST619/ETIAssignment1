@@ -57,7 +57,7 @@ func passenger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -194,7 +194,7 @@ func validatePassengerID(db *sql.DB, PID string) int {
 }
 
 func validatePassenger(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn")
+	db, err := sql.Open("mysql", "user:password@tcp(database:3306)/ETIAsgn")
 	if err != nil {
 		fmt.Println(err)
 	}

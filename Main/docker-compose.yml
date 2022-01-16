@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  database:
+    container_name: database
+    hostname: database
+    image: mysql:latest
+    restart: always
+    networks:
+      - etiasgn2
+    environment:
+      # MYSQL_USER: user
+      MYSQL_ROOT_PASSWORD: password
+      # MYSQL_PASSWORD: password
+    volumes:
+      - ./data:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+  web:
+    container_name: web
+    hostname: web
+    build:
+      context: ./HTML
+    restart: always
+    ports:
+      - "80:80"
+  passenger:
+    depends_on: 
+      - database
+    build:
+      context: ./Passenger
+    container_name: passenger-server
+    hostname: passenger-server
+    ports:
+      - 5000:5000
+    networks:
+      - etiasgn2
+    deploy:
+      restart_policy:
+        condition: on-failure
+  trip:
+    depends_on: 
+      - database
+    build:
+      context: ./Trip
+    container_name: trip-server
+    hostname: trip-server
+    ports:
+      - 5002:5002
+    networks:
+      - etiasgn2
+    deploy:
+      restart_policy:
+        condition: on-failure
+  driver:
+    depends_on: 
+      - database
+    build:
+      context: ./Driver
+    container_name: driver-server
+    hostname: driver-server
+    ports:
+      - 5001:5001
+    networks:
+      - etiasgn2
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+
+networks:
+  etiasgn2:
+    driver: bridge
