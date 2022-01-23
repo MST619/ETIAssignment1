@@ -89,39 +89,6 @@ func student(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("Content-type") == "application/json" {
-		//POST for creating new student
-		// if r.Method == "POST" {
-		// 	var newStudent Students
-		// 	reqBody, err := ioutil.ReadAll(r.Body)
-
-		// 	// defer the close till after the main function has finished executing
-		// 	defer r.Body.Close()
-		// 	if err == nil {
-		// 		err := json.Unmarshal(reqBody, &newStudent)
-		// 		if err != nil {
-		// 			println(string(reqBody))
-		// 			fmt.Printf("Error in JSON encoding. Error is %s", err)
-		// 		} else { //Check if student's DOB is empty or not
-		// 			if newStudent.DOB == "" {
-		// 				w.WriteHeader(http.StatusUnprocessableEntity)
-		// 				w.Write([]byte("422 - Please supply student " + "information " + "in JSON format"))
-		// 				return
-		// 			} else { //Validate student.
-		// 				if !validateStudentRecord(db, newStudent.DOB) {
-		// 					InsertStudentRecord(db, newStudent)
-		// 					w.WriteHeader(http.StatusCreated)
-		// 					w.Write([]byte("201 - Student added!"))
-		// 					return
-		// 				} else {
-		// 					w.WriteHeader(http.StatusUnprocessableEntity)
-		// 					w.Write([]byte("409 - Duplicate student ID"))
-		// 					return
-		// 				}
-		// 			}
-		// 		}
-		// 	}
-		// }
-
 		//PUT for creating or updating existing students
 		if r.Method == "PUT" {
 			fmt.Println("put called")
@@ -225,16 +192,6 @@ func GetStudentRecord(db *sql.DB, SID string, DOB string) Students {
 	}
 	return student
 }
-
-// func InsertStudentRecord(db *sql.DB, student Students) bool {
-// 	query := fmt.Sprintf("INSERT INTO Students (StudentID, StudentName, DOB, Address, PhoneNumber) VALUES ('%d','%s','%s','%s','%d');",
-// 		student.StudentID, student.StudentName, student.DOB, student.Address, student.PhoneNumber)
-// 	_, err := db.Query(query)
-// 	if err != nil {
-// 		panic(err.Error())
-// 	}
-// 	return true
-// }
 
 func EditStudentRecord(db *sql.DB, SID int, SN string, DOB string, ADS string, PN int) bool {
 	query := fmt.Sprintf("UPDATE Students SET StudentName='%s', DOB='%s', Address='%s', PhoneNumber=%d WHERE StudentID=%d", SN, DOB, ADS, PN, SID)
