@@ -156,6 +156,7 @@ func GetAllDriverRecords(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte(GetFreeDriver(db)))
+	//json.NewEncoder(w).Encode(GetDriverRecords(db, params["driverid"], params["email"]))
 }
 
 func validateDriver(w http.ResponseWriter, r *http.Request) {
