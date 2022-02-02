@@ -23,20 +23,20 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - name: install go
-      - uses: actions/checkout@v2
+      - name: Install go
+        uses: actions/checkout@v2
         with:
-          go-version: 1.17.2
-
+          go-version: 1.16.4
+          
       # Runs a single command using the runners shell
-      - name: checkout code
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
       
-      - name: fetch required go.mods
+      - name: Fetch required go.mods
         run: go mod download
         
-      - name: build docker image
-      - uses: docker/build-push-action@v2
+      - name: Build docker image
+        uses: docker/build-push-action@v2
         with:
           push: false
           tags: ${{ github.event.repository.name }}:latest, ${{ github.repository }}:latest
