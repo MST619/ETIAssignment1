@@ -32,7 +32,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       
-      - name: Fetch required go.mods
+      - name: Fetch required go mods
         run: go mod download
         
       - name: Build docker image
