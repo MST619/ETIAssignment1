@@ -34,6 +34,36 @@ type Students struct {
 	PhoneNumber int    `json:"PhoneNumber"`
 }
 
+type Modules struct {
+	ModuleCode      string `json:"ModuleCode"`
+	ModuleName      string `json:"ModuleName"`
+	ModuleSynopsis  string `json:"ModuleSynopsis"`
+	ModuleObjective string `json:"ModuleObjective"`
+	StudentID       int    `json:"StudentID"`
+}
+
+type Results struct {
+	ResultsID    int    `json:"ResultsID"`
+	ResultsGrade string `json:"ResultsGrade"`
+	StudentID    int    `json:"StudentID"`
+	ModuleCode   string `json:"ModuleCode"`
+}
+
+type Timetable struct {
+	TimetableID string `json:"TimetableID"`
+	LessonDay   string `json:"LessonDay"`
+	StartTime   string `json:"StartTime"`
+	EndTime     string `json:"EndTime"`
+	ModuleCode  string `json:"ModuleCode"`
+}
+
+type CommentsRatings struct {
+	RatingsID string `json:"RatingsID"`
+	Ratings   string `json:"Ratings"`
+	Comments  string `json:"Comments"`
+	StudentID int    `json:"StudentID"`
+}
+
 //Access token used for securing the REST API
 func pvalidKey(r *http.Request) bool {
 	// returns the key/value pairs in the query string as a map object
@@ -57,7 +87,7 @@ func student(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -122,14 +152,169 @@ func student(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func allStudents(w http.ResponseWriter, r *http.Request) {
-	kv := r.URL.Query()
-	for k, v := range kv {
-		fmt.Println(k, v)
+func module(w http.ResponseWriter, r *http.Request) {
+	if !pvalidKey(r) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("401 - Invalid key"))
+		return
 	}
-	//returns all the students in JSON
-	json.NewEncoder(w).Encode(students)
+
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened!")
+	}
+
+	//THE GET request for student to retrive data from the Database.
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllModules Modules
+		reqBody, err := ioutil.ReadAll(r.Body)
+
+		// defer the close till after the main function has finished executing
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllModules)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
+			}
+		}
+		json.NewEncoder(w).Encode(GetModules(db, params["modulecode"], params["studentid"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
 }
+
+func results(w http.ResponseWriter, r *http.Request) {
+	if !pvalidKey(r) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("401 - Invalid key"))
+		return
+	}
+
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened!")
+	}
+
+	//THE GET request for student to retrive data from the Database.
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllResults Results
+		reqBody, err := ioutil.ReadAll(r.Body)
+
+		// defer the close till after the main function has finished executing
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllResults)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
+			}
+		}
+		json.NewEncoder(w).Encode(GetResults(db, params["resultsid"], params["studentid"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+}
+
+func timetable(w http.ResponseWriter, r *http.Request) {
+	if !pvalidKey(r) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("401 - Invalid key"))
+		return
+	}
+
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened!")
+	}
+
+	//THE GET request for student to retrive data from the Database.
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllTimetable Timetable
+		reqBody, err := ioutil.ReadAll(r.Body)
+
+		// defer the close till after the main function has finished executing
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllTimetable)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
+			}
+		}
+		json.NewEncoder(w).Encode(GetTimeTable(db, params["timetableid"], params["modulecode"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+}
+
+func commentsrating(w http.ResponseWriter, r *http.Request) {
+	if !pvalidKey(r) {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("401 - Invalid key"))
+		return
+	}
+
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	if err != nil {
+		panic(err.Error())
+	} else {
+		fmt.Println("Database opened!")
+	}
+	//THE GET request for student to retrive data from the Database.
+	if r.Method == "GET" {
+		params := mux.Vars(r)
+		var getAllCommentsNRatings CommentsRatings
+		reqBody, err := ioutil.ReadAll(r.Body)
+
+		// defer the close till after the main function has finished executing
+		defer r.Body.Close()
+		if err == nil {
+			err := json.Unmarshal(reqBody, &getAllCommentsNRatings)
+			if err != nil {
+				println(string(reqBody))
+				fmt.Printf("Error in JSON encoding. Error is %s", err)
+			} else {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Invalid information!"))
+				return
+			}
+		}
+		json.NewEncoder(w).Encode(GetCommentsRatings(db, params["ratingsid"], params["studentid"]))
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+}
+
+// func allStudents(w http.ResponseWriter, r *http.Request) {
+// 	kv := r.URL.Query()
+// 	for k, v := range kv {
+// 		fmt.Println(k, v)
+// 	}
+// 	//returns all the students in JSON
+// 	json.NewEncoder(w).Encode(students)
+// }
 
 //To check if whether there is a duplicate email in the system
 func validateStudentRecord(db *sql.DB, DOB string) bool {
@@ -163,7 +348,7 @@ func validateStudentID(db *sql.DB, SID string) int {
 }
 
 func validateStudent(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -206,8 +391,67 @@ func DeleteStudents(db *sql.DB, SID int) {
 	fmt.Println("Sorry. You are not able to delete your account due to audit purposes.")
 }
 
-func main() {
+func GetModules(db *sql.DB, MCD string, SID string) Modules {
+	results, err := db.Query("SELECT * FROM Modules WHERE ModuleCode=? AND StudentID=?", MCD, SID)
+	if err != nil {
+		panic(err.Error())
+	}
+	var module Modules
+	for results.Next() {
+		err = results.Scan(&module.ModuleCode, &module.ModuleName, &module.ModuleSynopsis, &module.ModuleObjective, &module.StudentID)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return module
+}
 
+func GetResults(db *sql.DB, RID string, SID string) Results {
+	response, err := db.Query("SELECT * FROM Results WHERE ResultsID=? AND StudentID=?", RID, SID)
+	if err != nil {
+		panic(err.Error())
+	}
+	var result Results
+	for response.Next() {
+		err = response.Scan(&result.ResultsID, &result.ResultsGrade, &result.StudentID, &result.ModuleCode)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return result
+}
+
+func GetTimeTable(db *sql.DB, TID string, MCD string) Timetable {
+	results, err := db.Query("SELECT * FROM Timetable WHERE TimetableID=? AND ModuleCode=?", TID, MCD)
+	if err != nil {
+		panic(err.Error())
+	}
+	var timetable Timetable
+	for results.Next() {
+		err = results.Scan(&timetable.TimetableID, &timetable.LessonDay, &timetable.StartTime, &timetable.EndTime, &timetable.ModuleCode)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return timetable
+}
+
+func GetCommentsRatings(db *sql.DB, RID string, SID string) CommentsRatings {
+	results, err := db.Query("SELECT * FROM CommentsRating WHERE RatingsID=? AND StudentID=?", RID, SID)
+	if err != nil {
+		panic(err.Error())
+	}
+	var commentsratings CommentsRatings
+	for results.Next() {
+		err = results.Scan(&commentsratings.RatingsID, &commentsratings.Ratings, &commentsratings.Comments, &commentsratings.StudentID)
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+	return commentsratings
+}
+
+func main() {
 	students = make(map[string]studentInfo)
 	router := mux.NewRouter()
 	headers := handlers.AllowedHeaders([]string{"X-REQUESTED-With", "Content-Type"})
@@ -216,6 +460,10 @@ func main() {
 	router.HandleFunc("/api/v1/", phome)
 	router.HandleFunc("/api/v1/validateStudentRecord/{id}", validateStudent)
 	router.HandleFunc("/api/v1/students/{studentid}/{dob}", student).Methods("GET", "PUT", "POST", "DELETE")
+	router.HandleFunc("/api/v1/modules/{modulecode}/{studentid}", module).Methods("GET")
+	router.HandleFunc("/api/v1/timetable/{timetableid}/{modulecode}", timetable).Methods("GET")
+	router.HandleFunc("/api/v1/results/{resultsid}/{studentid}", results).Methods("GET")
+	router.HandleFunc("/api/v1/ratings/{ratingsid}/{studentid}", commentsrating).Methods("GET")
 
 	fmt.Println("Listening at port 8103")
 	log.Fatal(http.ListenAndServe(":8103", handlers.CORS(headers, methods, origins)(router)))

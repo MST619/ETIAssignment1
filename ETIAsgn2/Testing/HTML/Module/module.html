@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-    <title>EduFi - Student's Portal</title>
+    <title>EduFi - Student's Module</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
@@ -29,32 +29,33 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
     <!-- javascript to handle the API  -->
     <script type="text/javascript">
-        function Student(method, type, form) {
+        function Module(method, type, form) {
             event.preventDefault();
             const DataForm = new FormData(form);
             var object;
             var url;
             if (type == "GET") {
-                var studentid, dob;
+                var modulecode, studentid;
                 for(let [name, value] of DataForm){
-                    if (name == "DOB") { 
-                        dob = value
-                    } else {studentid = value}
+                    if (name == "StudentID") { 
+                        studentid = value
+                    } else {modulecode = value}
                 }
-                console.log(studentid)
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+                console.log(modulecode)
+                url = "http://localhost:8103/api/v1/modules/"+modulecode+"/"+studentid+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
                 console.log(url)
-            } else if (type == "POST" || type == "PUT"){
-                var object = {
-                    "StudentID": parseInt(DataForm.get("StudentID")),
-                    "StudentName": DataForm.get("StudentName"),
-                    "DOB": DataForm.get("DOB"),
-                    "Address": DataForm.get("Address"),
-                    "PhoneNumber": parseInt(DataForm.get("PhoneNumber"))
-                };
-                object = JSON.stringify(object);
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
-            }
+            } 
+            // else if (type == "POST" || type == "PUT"){
+            //     var object = {
+            //         "StudentID": parseInt(DataForm.get("StudentID")),
+            //         "StudentName": DataForm.get("StudentName"),
+            //         "DOB": DataForm.get("DOB"),
+            //         "Address": DataForm.get("Address"),
+            //         "PhoneNumber": parseInt(DataForm.get("PhoneNumber"))
+            //     };
+            //     object = JSON.stringify(object);
+            //     url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+            // }
             $.ajax({
                 type: type,
                 url: url,
@@ -64,11 +65,12 @@
                 success: function (data, textStatus, jqXHR){
                     var table = $("<table><tr><th>"+method+"</th></tr>");
                     if (type == "GET") {
-                        table.append("<tr><td>StudentID:</td><td>" + data.StudentID + "</td></tr>");
-                        table.append("<tr><td>StudentName:</td><td>" + data["StudentName"] + "</td></tr>");
-                        table.append("<tr><td>DOB:</td><td>" + data["DOB"] + "</td></tr>");
-                        table.append("<tr><td>Address:</td><td>" + data["Address"] + "</td></tr>");
-                        table.append("<tr><td>PhoneNumber:</td><td>" + data["PhoneNumber"] + "</td></tr>");
+                        table.append("<tr><td>ModuleCode:</td><td>" + data.ModuleCode + "</td></tr>");
+                        table.append("<tr><td>StudentID:</td><td>" + data["StudentID"] + "</td></tr>");
+                        table.append("<tr><td>ModuleName:</td><td>" + data["ModuleName"] + "</td></tr>");
+                        table.append("<tr><td>ModuleSynopsis:</td><td>" + data["ModuleSynopsis"] + "</td></tr>");
+                        table.append("<tr><td>ModuleObjective:</td><td>" + data["ModuleObjective"] + "</td></tr>");
+
                         
                     }
                     $("#message").html(table);
@@ -95,26 +97,24 @@
     </script>
     <body>
         <div>
-            <select id="StudentRequestOptions" onchange="SwitchForm(this)">
-                <option value="GET" selected="selected">Get Student</option>
-                <!-- <option value="POST">Create Passenger</option> -->
-                <option value="PUT">Update Student</option>
+            <select id="ModuleRequestOptions" onchange="SwitchForm(this)">
+                <option value="GET" selected="selected">Get modules</option>
             </select>
         </div>
 
         <!-- The container that stores the GET form-->
         <div class="container" id="GET">
-            <h1>Get Student</h1>
-            <h3>Get student by student ID and DOB</h3>
-            <form onsubmit="Student('GetStudentRecord', 'GET', this);">
+            <h1>Get module</h1>
+            <h3>Get module by module code and student ID</h3>
+            <form onsubmit="Module('GetModules', 'GET', this);">
                 <div>
-                    <label for="StudentID">Student ID:</label>
-                    <input type="text" class="form-control" name="StudentID" id="StudentID" placeholder="Enter your Student ID" value="1">
+                    <label for="ModuleCode">Module Code:</label>
+                    <input type="text" class="form-control" name="ModuleCode" id="ModuleCode" placeholder="Enter Module Code e.g.'CM'" value="CM">
                 </div>
             <br>
                 <div>
-                    <label for="DOB">DOB:</label>
-                    <input type="text" class="form-control" name="DOB" id="DOB" placeholder="Enter DOB" value="20-10-1985">
+                    <label for="StudentID">Student ID:</label>
+                    <input type="text" class="form-control" name="StudentID" id="StudentID" placeholder="Enter your Student id" value="1">
                 </div>
             <br>
                 <button type="submit" class="btn btn-primary">Submit</button>
@@ -122,37 +122,6 @@
         </div>
 
             <!-- The container that stores the PUT form-->
-            <div class="container" id="PUT">
-                <h1>Update Student</h1>
-                <form onsubmit="Student('EditStudentRecord', 'PUT', this);">
-                    <div>
-                        <label for="StudentID">StudentID:</label>
-                        <input type="text" class="form-control" name="StudentID" id="StudentID" placeholder="Add a StudentID">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="StudentName">Your Name:</label>
-                        <input type="text" class="form-control" name="StudentName" id="StudentName" placeholder="Enter your name">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="DOB">DOB:</label>
-                        <input type="text" class="form-control" name="DOB" id="DOB" placeholder="Enter your DOB">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="Address">Address:</label>
-                        <input type="text" class="form-control" name="Address" id="Address" placeholder="Enter your address">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="PhoneNumber">Phone Number:</label>
-                        <input type="text" class="form-control" name="PhoneNumber" id="PhoneNumber" placeholder="Enter your phone number">
-                    </div>
-                    <br>
-                    <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
-            </div>
             <br>
 
             <!-- Store the success/fail message in to show after user has clicked submitted -->
