@@ -87,7 +87,7 @@ func student(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -159,7 +159,7 @@ func module(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -198,7 +198,7 @@ func results(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -237,7 +237,7 @@ func timetable(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -276,7 +276,7 @@ func commentsrating(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		panic(err.Error())
 	} else {
@@ -348,7 +348,7 @@ func validateStudentID(db *sql.DB, SID string) int {
 }
 
 func validateStudent(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(127.0.0.1:3306)/ETIAsgn2")
+	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
 	if err != nil {
 		fmt.Println(err)
 	}
