@@ -108,7 +108,7 @@ Assignment was a continuation of what we have done in Assignment 1, just at a mu
 
 - 3.5.1. View particulars
 
-![ViewParticulars.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/ViewParticulars.png)
+![ViewParticulars.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/ViewParticulars.png)
 
 Request URL: 
 
@@ -116,11 +116,11 @@ Request URL:
 
 - 3.5.2. Update particulars
 
-![UpdateStudentParticulars.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/UpdateStudentParticulars.png)
+![UpdateStudentParticulars.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/UpdateStudentParticulars.png)
 
 - 3.5.3. View modules taken
 
-![ModuleHTML.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/ModuleHTML.png)
+![ModuleHTML.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/ModuleHTML.png)
 
 Request URL: 
 
@@ -128,7 +128,7 @@ Request URL:
 
 - 3.5.4. View original results
 
-![ResultsHTML.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/ResultsHTML.png)
+![ResultsHTML.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/ResultsHTML.png)
 
 Request URL: 
 
@@ -136,13 +136,13 @@ Request URL:
 
 - 3.5.6. View timetable
 
-![TimetableHTML.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/TimetableHTML.png)
+![TimetableHTML.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/TimetableHTML.png)
 
 [](http://localhost:8104/api/v1/timetable/T001/CM?key=2c78afaf-97da-4816-bbee-9ad239abb296)
 
 - 3.5.8. Search for other students
 
-![Search other students.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/Search_other_students.png)
+![Search other students.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/GetOther%20students.png)
 
 Request URL: 
 
@@ -165,7 +165,7 @@ router.HandleFunc("/api/v1/students/{studentid}/", student).Methods("GET", "PUT"
 
 # ****Architecture Diagram****
 
-![ETI2 architecture diagram.drawio.png](ETI%20Assignment%202%206c9c3cb1663d4b7d96e42f3d308348f5/ETI2_architecture_diagram.drawio.png)
+![ETI2 architecture diagram.drawio.png](https://github.com/MST619/ETIAssignment1/blob/main/ETIAsgn2/ETI2%20architecture%20diagram.drawio.png)
 
 As mentioned above, the student package relies on a lot of other people’s API in order for it to function properly. 
 
