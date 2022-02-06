@@ -4,7 +4,7 @@ services:
   database:
     container_name: studentdb
     hostname: studentdb
-    image: mysql:latest
+    image: mst619/mysql
     restart: always
     networks:
       - etiasgn2
@@ -19,16 +19,14 @@ services:
   web:
     container_name: web
     hostname: web
-    build:
-      context: ./HTML
+    image: mst619/main_web
     restart: always
     ports:
       - "8100:8100"
   student:
     depends_on: 
       - database
-    build:
-      context: ./Student
+    image: mst619/main_student
     container_name: student-server
     hostname: student-server
     ports:
