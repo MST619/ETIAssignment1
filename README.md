@@ -1,4 +1,4 @@
-# ETIAssignment1
+# ETIAssignment1 - Scroll down for Assignment 2
 Student ID: S10197943E  
 Student Name: Min Se Thu
 
@@ -94,11 +94,6 @@ go run tripmain.go
 
 # ETI Assignment 2
 
-## Table of contents
-
-1. Assignment 2
-2. Package 3.5, Student - Features
-3. Student Microservice
 
 # Assignment 2
 
