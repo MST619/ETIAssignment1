@@ -214,53 +214,19 @@ func getmodule(w http.ResponseWriter, r *http.Request) {
 }
 
 func otherdetails(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	method := params["method"]
-	sidparam := params["StudentID"]
-
-	if method == "" || sidparam == "" {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Write([]byte("Please supply student's information and valid method"))
-		return
-	} else {
-		switch method {
-		case "getAllStudentsWithRatings":
-			details := getAllStudentsWithRatings()
-			if len(details) == 0 {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("No students found"))
-			} else {
-				json.NewEncoder(w).Encode(sidparam)
-			}
-		case "getDiffStudent":
-			student := getDiffStudent(sidparam)
-			if student == (Students{}) {
-				w.WriteHeader(http.StatusUnprocessableEntity)
-				w.Write([]byte("No students found"))
-			} else {
-				json.NewEncoder(w).Encode(student)
-				w.WriteHeader(http.StatusAccepted)
-			}
-			// case "GetStudentRecord":
-			// 	student := GetStudentRecord(sidparam)
-			// 	if student == (Students{}) {
-			// 		w.WriteHeader(http.StatusUnprocessableEntity)
-			// 		w.Write([]byte("No students found"))
-			// 	}
-			// 	println(Timetable)
-			// 	w.WriteHeader(http.StatusAccepted)
-
-			// case "getAdjustedResults":
-			// 	Student := getAdjustedResults(sidparam)
-			// 	if len(Student) == 0 {
-			// 		w.WriteHeader(http.StatusUnprocessableEntity)
-			// 		w.Write([]byte("Adjusted results are empty"))
-			// 	} else {
-			// 		json.NewEncoder(w).Encode(Student)
-			// 		w.WriteHeader(http.StatusAccepted)
-			// 	}
+	var studentList []Students
+	URL := "http://localhost:8103/api/v1/getAllStudentsWithRatings"
+	response, err := http.Get(URL)
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	if response.StatusCode == http.StatusAccepted {
+		results, err := ioutil.ReadAll(response.Body)
+		if err != nil || json.Unmarshal([]byte(results), &studentList) != nil {
+			println(err)
 		}
 	}
+	json.NewEncoder(w).Encode(studentList)
 }
 
 func allStudents(w http.ResponseWriter, r *http.Request) {
@@ -274,7 +240,7 @@ func allStudents(w http.ResponseWriter, r *http.Request) {
 
 //To check if whether there is a duplicate email in the system
 func validateStudentRecord(DOB string) bool {
-	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/validateStudentRecord/%s", DOB)
+	URL := fmt.Sprintf("http://localhost:8103/api/v1/validateStudentRecord/%s", DOB)
 	//query := fmt.Sprintf("SELECT * FROM Students WHERE DOB= '%s'", DOB)
 	response, err := http.Get(URL)
 	if err != nil {
@@ -297,7 +263,7 @@ func validateStudentRecord(DOB string) bool {
 
 //Function to validate whether a specific student exists.
 func validateStudentID(SID string) bool {
-	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/validateStudentID/%s", SID)
+	URL := fmt.Sprintf("http://localhost:8103/api/v1/validateStudentID/%s", SID)
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Print(err.Error())
@@ -319,7 +285,7 @@ func validateStudentID(SID string) bool {
 
 //3.5.1.	View particulars
 func GetStudentRecord(SID int) Students {
-	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/GetStudentRecord/%d", SID)
+	URL := fmt.Sprintf("http://localhost:8103/api/v1/GetStudentRecord/%d", SID)
 	response, err := http.Get(URL)
 	var student Students
 	if err != nil {
@@ -351,7 +317,7 @@ func getModulesTaken(SID int) []Modules {
 	// return modules
 
 	//FOR WHEN I GET THE ENDPOINT FROM PKG3.4
-	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/getModulesTaken/%d", SID)
+	URL := fmt.Sprintf("http://localhost:8103/api/v1/getModulesTaken/%d", SID)
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Print(err.Error())
@@ -372,7 +338,7 @@ func getModulesTaken(SID int) []Modules {
 
 //3.5.4.	View original results
 func getResults(SID int) []Results {
-	URL := "http://172.20.30.96:8103/api/v1/getResults"
+	URL := "http://localhost:8103/api/v1/getResults"
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Print(err.Error())
@@ -394,7 +360,7 @@ func getResults(SID int) []Results {
 
 //3.5.5.	View adjusted results after marks trading
 func getAdjustedResults(SID int) []Results {
-	URL := "http://172.20.30.96:8103/api/v1/getResults"
+	URL := "http://localhost:8103/api/v1/getResults"
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -416,7 +382,7 @@ func getAdjustedResults(SID int) []Results {
 
 //3.5.6.	View timetable
 func getTimeTable(SID int) bool {
-	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/getTimetable/%d", SID)
+	URL := fmt.Sprintf("http://localhost:8103/api/v1/getTimetable/%d", SID)
 	response, err := http.Get(URL)
 	if err != nil {
 		fmt.Print(err.Error())
@@ -437,7 +403,7 @@ func getTimeTable(SID int) bool {
 
 //3.5.7.	List all students with ratings
 func getAllStudentsWithRatings() []Ratings {
-	response, err := http.Get("http://172.20.30.96:8103/api/v1/getAllStudentsWithRatings")
+	response, err := http.Get("http://localhost:8103/api/v1/getAllStudentsWithRatings")
 	if err != nil {
 		fmt.Print(err.Error())
 	}
@@ -458,7 +424,7 @@ func getAllStudentsWithRatings() []Ratings {
 
 //3.5.8.	Search for other students
 func getDiffStudent(SID string) Students {
-	url := "http://172.20.30.96:8103/api/v1/getDiffStudent/1"
+	url := "http://localhost:8103/api/v1/getDiffStudent/1"
 	reqBody, err := http.Get(url)
 	var student Students
 
@@ -477,7 +443,7 @@ func getDiffStudent(SID string) Students {
 //3.5.2.	Update particulars
 func EditStudentRecord(student Students) bool {
 	json, _ := json.Marshal(student)
-	URL := "http://172.20.30.96:8103/api/v1/EditStudentRecord"
+	URL := "http://localhost:8103/api/v1/EditStudentRecord"
 
 	response, err := http.NewRequest(http.MethodPut, URL, bytes.NewBuffer(json))
 	if err != nil {
