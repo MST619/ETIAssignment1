@@ -217,15 +217,15 @@ Link to docker images:
 
 Student front-end: 
 
-[Docker Hub](https://hub.docker.com/repository/docker/mst619/studenthtmlfinal)
+[Docker Hub](https://hub.docker.com/repository/docker/mst619/main_web)
 
 Student API: 
 
-[Docker Hub](https://hub.docker.com/repository/docker/mst619/studentfinal)
+[Docker Hub](https://hub.docker.com/repository/docker/mst619/main_student)
 
 Student DB:
 
-[Docker Hub](https://hub.docker.com/repository/docker/mst619/studentdbfinal)
+[Docker Hub](https://hub.docker.com/repository/docker/mst619/mysql)
 
 1. Pull the images from docker
 
