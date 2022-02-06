@@ -42,7 +42,7 @@
                     } else {studentid = value}
                 }
                 console.log(studentid)
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+                url = "http://localhost:8104/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
                 console.log(url)
             } else if (type == "POST" || type == "PUT"){
                 var object = {
@@ -53,7 +53,7 @@
                     "PhoneNumber": parseInt(DataForm.get("PhoneNumber"))
                 };
                 object = JSON.stringify(object);
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
+                url = "http://localhost:8104/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
             }
             $.ajax({
                 type: type,

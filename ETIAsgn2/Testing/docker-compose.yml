@@ -2,8 +2,8 @@ version: '3.3'
 
 services:
   database:
-    container_name: studentdb
-    hostname: studentdb
+    container_name: studentdbtest
+    hostname: studentdbtest
     image: mysql:latest
     restart: always
     networks:
@@ -17,8 +17,8 @@ services:
     ports:
       - "3306:3306"
   web:
-    container_name: web
-    hostname: web
+    container_name: studentwebtest
+    hostname: studentwebtest
     build:
       context: ./HTML
     restart: always
@@ -29,10 +29,10 @@ services:
       - database
     build:
       context: ./Student
-    container_name: student-server
-    hostname: student-server
+    container_name: studenttest-server
+    hostname: studenttest-server
     ports:
-      - 8103:8103
+      - 8104:8104
     networks:
       - etiasgn2
     deploy:
