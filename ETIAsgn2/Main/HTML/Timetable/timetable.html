@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+    <title>EduFi - Student's Timetable</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Raleway">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+    h1 {text-align: center;}
+    div {text-align: center;}
+
+    body,h1,h2,h3,h4,h5,h6 {font-family: "Raleway", Arial, Helvetica, sans-serif}
+    .myLink {display: none}
+    </style>
+    <body class="w3-light-grey">
+
+    <!-- Navigation Bar -->
+    <div class="w3-bar w3-white w3-border-bottom w3-xlarge">
+        <a href="HTML\Student\student.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Student</b></a>
+        <a href="HTML\Module\module.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Module</b></a>
+        <a href="HTML\Timetable\timetable.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Timetable</b></a>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+
+    <!-- javascript to handle the API  -->
+    <script type="text/javascript">
+        function Timetable(method, type, form) {
+            $.ajax({
+                type: "GET",
+                url: url,
+                dataType: "json",
+                data: object,
+                contentType: "application/json",
+                success: function (data, textStatus, jqXHR){
+                    if (method == "getTimetable") {
+                        var table = $("<table><tr><th>"+method+"</th></tr>");
+                        table.append("<tr><td>TimetableID:</td><td>" + data.TimetableID + "</td></tr>");
+                        table.append("<tr><td>ModuleCode:</td><td>" + data["ModuleCode"] + "</td></tr>");
+                        table.append("<tr><td>LessonDay:</td><td>" + data["lesson_day"] + "</td></tr>");
+                        table.append("<tr><td>StartTime:</td><td>" + data["start_time"] + "</td></tr>");
+                        table.append("<tr><td>EndTime:</td><td>" + data["end_time"] + "</td></tr>");
+                        table.append("<tr><td>Module:</td><td>" + data["module"] + "</td></tr>")
+                    }
+                    $("#timetablemessage").html(table);
+                },
+                error: function (jqXHR, textStatus, data) {
+                    $("#timetablemessage").show();
+                }
+            });
+        };
+    </script>
+
+    <body>
+        <!-- The container that stores the GET form-->
+        <div class="container" id="GET">
+            <h1>Your timetable</h1>
+            
+            <!-- Store the success/fail message in to show after user has clicked submitted -->
+            <div id="timetablemessage"></div>
+        </div>
+    </body>
+
+    <script>
+        // Will only show the form that the user has selected.
+        $(".container").hide();
+        $("#GET").show();
+    </script>
+</html>

@@ -17,9 +17,9 @@
 
     <!-- Navigation Bar -->
     <div class="w3-bar w3-white w3-border-bottom w3-xlarge">
-        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\ETIAsgn2\HTML\Student\student.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Student</b></a>
-        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\HTML\Driver\Driver.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Timetable</b></a>
-        <a href="C:\Users\minse\OneDrive\Documents\GitHub\ETIAssignment1\HTML\Trip\Trip.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Module</b></a>
+        <a href="HTML\Student\student.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Student</b></a>
+        <a href="HTML\Module\module.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Module</b></a>
+        <a href="HTML\Timetable\timetable.html" class="w3-bar-item w3-button w3-text-red w3-hover-red"><b><i class="w3-margin-right"></i>Timetable</b></a>
     </div>
 
     <h1>Welcome to EduFi!</h1>
@@ -28,52 +28,48 @@
     <!-- javascript to handle the API  -->
     <script type="text/javascript">
         function Student(method, type, form) {
-            event.preventDefault();
             const DataForm = new FormData(form);
             var object;
             var url;
-            if (type == "GET") {
-                var studentid, dob;
-                for(let [name, value] of DataForm){
-                    if (name == "DOB") { 
-                        dob = value
-                    } else {studentid = value}
+            var studentid = form.StudentID;
+            var dob = form.DOB;
+            var json = {};
+            if(type == "PUT"){
+                event.preventDefault();
+                studentid = form.StudentID.value
+                dob = form.DOB.value
+                for(let [name, value] of FormData(form)){
+                    if (name == "StudentID") json[name] = parseInt(value);
+                    else if (name == "DOB") json[name] = parseInt(value);
+                    else json[name] = value
                 }
-                console.log(studentid)
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
-                console.log(url)
-            } else if (type == "POST" || type == "PUT"){
-                var object = {
-                    "StudentID": parseInt(DataForm.get("StudentID")),
-                    "StudentName": DataForm.get("StudentName"),
-                    "DOB": DataForm.get("DOB"),
-                    "Address": DataForm.get("Address"),
-                    "PhoneNumber": parseInt(DataForm.get("PhoneNumber"))
-                };
-                object = JSON.stringify(object);
-                url = "http://localhost:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296"
             }
             $.ajax({
                 type: type,
-                url: url,
+                url: "http://172.20.30.96:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296",
                 dataType: "json",
-                data: object,
+                data: JSON.stringify(json),
                 contentType: "application/json",
                 success: function (data, textStatus, jqXHR){
-                    var table = $("<table><tr><th>"+method+"</th></tr>");
-                    if (type == "GET") {
-                        table.append("<tr><td>StudentID:</td><td>" + data.StudentID + "</td></tr>");
-                        table.append("<tr><td>StudentName:</td><td>" + data["StudentName"] + "</td></tr>");
-                        table.append("<tr><td>DOB:</td><td>" + data["DOB"] + "</td></tr>");
-                        table.append("<tr><td>Address:</td><td>" + data["Address"] + "</td></tr>");
-                        table.append("<tr><td>PhoneNumber:</td><td>" + data["PhoneNumber"] + "</td></tr>");
-                        
-                    }
-                    $("#message").html(table);
+                    //var table = $("<table><tr><th>"+method+"</th></tr>");
+                    //if (type == "GET") {
+                        $("#StudentID").val(data.StudentID);
+                        $("#StudentName").val(data.StudentName);
+                        $("#DOB").val(data.DOB);
+                        $("#Address").val(data.Address);
+                        $("#PhoneNumber").val(data.PhoneNumber);
+                        // table.append("<tr><td>StudentID:</td><td>" + data.StudentID + "</td></tr>");
+                        // table.append("<tr><td>StudentName:</td><td>" + data["StudentName"] + "</td></tr>");
+                        // table.append("<tr><td>DOB:</td><td>" + data["DOB"] + "</td></tr>");
+                        // table.append("<tr><td>Address:</td><td>" + data["Address"] + "</td></tr>");
+                        // table.append("<tr><td>PhoneNumber:</td><td>" + data["PhoneNumber"] + "</td></tr>");
+
+                    //}
+                   //$("#message").html(table);
                 },
                 error: function (jqXHR, textStatus, data) {
-                    $("#message").empty();
-                    if (type == "POST" || type == "PUT"){
+                    //$("#message").empty();
+                    if (type == "PUT"){
                         var table = $("<table><tr><th>"+jqXHR.responseText+"</th></tr>");
                         $("#message").html(table);
                     } else {
@@ -84,13 +80,14 @@
             });
         };
         // Will only show the form that the user has selected.
-        function SwitchForm(optionValue){
-            $(".container").hide();
-            $("#message").hide();
-            var content = "#"+optionValue.value;
-            $(content).show();
-        }
+        // function SwitchForm(optionValue){
+        //     $(".container").hide();
+        //     $("#message").hide();
+        //     var content = "#"+optionValue.value;
+        //     $(content).show();
+        // }
     </script>
+
     <body>
         <div>
             <select id="StudentRequestOptions" onchange="SwitchForm(this)">
@@ -118,39 +115,6 @@
                 <button type="submit" class="btn btn-primary">Submit</button>
             </form>
         </div>
-
-        <!-- The container that stores the POST form-->
-            <!-- <div class="container" id="POST">
-                <h1>Create Passenger</h1>
-                <form onsubmit="Passenger('InsertPassengerRecord', 'POST', this);">
-                    <div>
-                        <label for="PassengerID">PassengerID:</label>
-                        <input type="text" class="form-control" name="PassengerID" id="PassengerID" placeholder="Enter your PassengerID" value="7">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="FirstName">First Name:</label>
-                        <input type="text" class="form-control" name="FirstName" id="FirstName" placeholder="Enter your first name">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="LastName">Last Name:</label>
-                        <input type="text" class="form-control" name="LastName" id="LastName" placeholder="Enter your last name">
-                    </div>
-                    <br>
-                    <div>
-                        <label for="PhoneNumber">Phone Number:</label>
-                        <input type="text" class="form-control" name="PhoneNumber" id="PhoneNumber" placeholder="Enter your phone no">
-                    </div>
-                    </br>
-                    <div>
-                        <label for="Email">Email:</label>
-                        <input type="text" class="form-control" name="Email" id="Email" placeholder="Enter email">
-                    </div>
-                    <br>
-                <button type="submit" class="btn btn-primary">Submit</button>
-                </form>
-            </div> -->
 
             <!-- The container that stores the PUT form-->
             <div class="container" id="PUT">

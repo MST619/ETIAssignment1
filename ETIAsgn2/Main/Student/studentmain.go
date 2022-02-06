@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -27,11 +28,43 @@ type studentInfo struct {
 
 //Collections of fields for Passengers and also to map this type to the record in the table
 type Students struct {
-	StudentID   int    `json:"StudentID"`
+	StudentID   string `json:"StudentID"`
 	StudentName string `json:"StudentName"`
 	DOB         string `json:"DOB"`
 	Address     string `json:"Address"`
 	PhoneNumber int    `json:"PhoneNumber"`
+}
+
+type Modules struct {
+	ModuleCode      int        `json:"ModuleCode"`
+	ModuleName      string     `json:"ModuleName"`
+	ModuleSynopsis  string     `json:"ModuleSynopsis"`
+	ModuleObjective string     `json:"ModuleObjective"`
+	ModuleStudent   []Students `json:"ModuleStudent"`
+	Results         []Results  `json:"Results"`
+}
+
+type Results struct {
+	ResultsID    int        `json:"ResultsID"`
+	ResultsGrade string     `json:"ResultsGrade"`
+	StudentID    []Students `json:"StudentsID"`
+	ModuleCode   []Modules  `json:"ModuleCode"`
+}
+
+type Timetable struct {
+	TimetableID string  `json:"TimetableID"`
+	ModuleCode  int     `json:"ModuleCode"`
+	LessonDay   string  `json:"lesson_day"`
+	StartTime   string  `json:"start_time"`
+	EndTime     string  `json:"end_time"`
+	Module      Modules `json:"module"`
+}
+
+type Ratings struct {
+	RatingsID string `json:"RatingsID"`
+	StudentID int    `json:"StudentID"`
+	Ratings   int    `json:"Ratings"`
+	Comments  string `json:"Comments"`
 }
 
 //Access token used for securing the REST API
@@ -56,17 +89,34 @@ func student(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("401 - Invalid key"))
 		return
 	}
-
-	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
-	if err != nil {
-		panic(err.Error())
-	} else {
-		fmt.Println("Database opened!")
+	var stdnt Students
+	params := mux.Vars(r)
+	SID := params["StudentID"]
+	studentID, err := strconv.Atoi(SID)
+	if studentID == 0 || !validateStudentID(SID) || err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("422 - Please supply student information " + "information " + "in JSON format"))
+		return
 	}
+	//std = GetStudentRecord(SID)
+
+	// db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
+	// if err != nil {
+	// 	panic(err.Error())
+	// } else {
+	// 	fmt.Println("Database opened!")
+	// }
 
 	//THE GET request for student to retrive data from the Database.
 	if r.Method == "GET" {
-		params := mux.Vars(r)
+		stdnt = GetStudentRecord(studentID)
+		if stdnt == (Students{}) {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			w.Write([]byte("No student found"))
+		} else {
+			json.NewEncoder(w).Encode(stdnt)
+			w.WriteHeader(http.StatusAccepted)
+		}
 		var getAllStudents Students
 		reqBody, err := ioutil.ReadAll(r.Body)
 
@@ -83,41 +133,132 @@ func student(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		json.NewEncoder(w).Encode(GetStudentRecord(db, params["studentid"], params["dob"]))
+		json.NewEncoder(w).Encode(studentID)
 		w.WriteHeader(http.StatusAccepted)
 		return
 	}
 
 	if r.Header.Get("Content-type") == "application/json" {
-		//PUT for creating or updating existing students
 		if r.Method == "PUT" {
-			fmt.Println("put called")
-			var updateStudent Students
 			reqBody, err := ioutil.ReadAll(r.Body)
-			if err == nil {
-				json.Unmarshal(reqBody, &updateStudent)
-
-				//Checking if the student's name is empty
-				if updateStudent.StudentName == "" {
-					w.WriteHeader(http.StatusUnprocessableEntity)
-					w.Write([]byte("422 - Please supply student information " + "information " + "in JSON format"))
-					return
-				} else { //Checking to see if there is a existing student in the database
-					if !validateStudentRecord(db, updateStudent.DOB) {
-						w.WriteHeader(http.StatusUnprocessableEntity)
-						w.Write([]byte("No student found with: " + updateStudent.DOB))
-					} else {
-						EditStudentRecord(db, updateStudent.StudentID, updateStudent.StudentName, updateStudent.DOB, updateStudent.Address, updateStudent.PhoneNumber)
-						w.WriteHeader(http.StatusCreated)
-						w.Write([]byte("201 - Student updated!"))
-						return
-					}
-				}
+			if err != nil {
+				println(err.Error())
+			}
+			defer r.Body.Close()
+			var updateStudent Students
+			err = json.Unmarshal(reqBody, &updateStudent)
+			if !EditStudentRecord(updateStudent) || err != nil {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("No student found with: " + updateStudent.DOB))
+				return
+			} else {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("201 - Student updated!"))
+				return
 			}
 		}
-		if r.Method == "DELETE" {
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("404 - You are not able to delete your account due to audit purposes"))
+
+	} else {
+		w.WriteHeader(
+			http.StatusUnprocessableEntity)
+		w.Write([]byte("422 - Please supply student information " + "information " + "in JSON format"))
+		return
+	}
+}
+
+func getmodule(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	method := params["method"]
+	SIDParam := params["StudentID"]
+	SID, err := strconv.Atoi(SIDParam)
+
+	if method == "" || err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("Please supply student's information and valid method"))
+		return
+	} else {
+		switch string(method) {
+		case "getModules":
+			Modules := getModulesTaken(SID)
+			if len(Modules) == 0 {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("No modules found"))
+			} else {
+				json.NewEncoder(w).Encode(Modules)
+			}
+		case "getResults":
+			Results := getResults(SID)
+			if len(Results) == 0 {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("No results found"))
+			} else {
+				json.NewEncoder(w).Encode(Results)
+				w.WriteHeader(http.StatusAccepted)
+			}
+		case "getTimetable":
+			Timetable := getTimeTable(SID)
+			println(Timetable)
+			w.WriteHeader(http.StatusAccepted)
+
+		case "getAdjustedResults":
+			Student := getAdjustedResults(SID)
+			if len(Student) == 0 {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("Adjusted results are empty"))
+			} else {
+				json.NewEncoder(w).Encode(Student)
+				w.WriteHeader(http.StatusAccepted)
+			}
+		}
+	}
+}
+
+func otherdetails(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	method := params["method"]
+	sidparam := params["StudentID"]
+
+	if method == "" || sidparam == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte("Please supply student's information and valid method"))
+		return
+	} else {
+		switch method {
+		case "getAllStudentsWithRatings":
+			details := getAllStudentsWithRatings()
+			if len(details) == 0 {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("No students found"))
+			} else {
+				json.NewEncoder(w).Encode(sidparam)
+			}
+		case "getDiffStudent":
+			student := getDiffStudent(sidparam)
+			if student == (Students{}) {
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write([]byte("No students found"))
+			} else {
+				json.NewEncoder(w).Encode(student)
+				w.WriteHeader(http.StatusAccepted)
+			}
+			// case "GetStudentRecord":
+			// 	student := GetStudentRecord(sidparam)
+			// 	if student == (Students{}) {
+			// 		w.WriteHeader(http.StatusUnprocessableEntity)
+			// 		w.Write([]byte("No students found"))
+			// 	}
+			// 	println(Timetable)
+			// 	w.WriteHeader(http.StatusAccepted)
+
+			// case "getAdjustedResults":
+			// 	Student := getAdjustedResults(sidparam)
+			// 	if len(Student) == 0 {
+			// 		w.WriteHeader(http.StatusUnprocessableEntity)
+			// 		w.Write([]byte("Adjusted results are empty"))
+			// 	} else {
+			// 		json.NewEncoder(w).Encode(Student)
+			// 		w.WriteHeader(http.StatusAccepted)
+			// 	}
 		}
 	}
 }
@@ -132,74 +273,231 @@ func allStudents(w http.ResponseWriter, r *http.Request) {
 }
 
 //To check if whether there is a duplicate email in the system
-func validateStudentRecord(db *sql.DB, DOB string) bool {
-	query := fmt.Sprintf("SELECT * FROM Students WHERE DOB= '%s'", DOB)
-	results, err := db.Query(query)
+func validateStudentRecord(DOB string) bool {
+	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/validateStudentRecord/%s", DOB)
+	//query := fmt.Sprintf("SELECT * FROM Students WHERE DOB= '%s'", DOB)
+	response, err := http.Get(URL)
 	if err != nil {
 		panic(err.Error())
 	}
-	var student Students
-	for results.Next() {
-		err = results.Scan(&student.StudentID, &student.StudentName, &student.DOB, &student.Address, &student.PhoneNumber)
+	if response.StatusCode == 202 {
+		response, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			panic(err.Error())
-		} else if student.DOB == DOB {
-			return true
+			println(err)
+		} else {
+			var std Students
+			err = json.Unmarshal([]byte(response), &std)
+			if err != nil {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-//Function to validate whether a specific Passenger exists.
-func validateStudentID(db *sql.DB, SID string) int {
-	query := fmt.Sprintf("SELECT * FROM Students WHERE StudentID=%s", SID)
-	var student Students
-	row := db.QueryRow(query) //Method to execute the query and is expected to return a single row.
-	if err := row.Scan(&student.StudentID, &student.StudentName, &student.DOB, &student.Address, &student.PhoneNumber); err != nil {
-		panic(err.Error())
-	} else {
-		return student.StudentID
-	}
-}
-
-func validateStudent(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("mysql", "user:password@tcp(studentdb:3306)/ETIAsgn2")
+//Function to validate whether a specific student exists.
+func validateStudentID(SID string) bool {
+	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/validateStudentID/%s", SID)
+	response, err := http.Get(URL)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Print(err.Error())
 	}
-	params := mux.Vars(r)
-	if _, err := strconv.Atoi(params["id"]); err != nil { //Converting string to int
-		w.WriteHeader(http.StatusUnprocessableEntity)
-		w.Write([]byte("422 - Please supply student information " + "information " + "in JSON format"))
-		return
-	} else {
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(strconv.Itoa(validateStudentID(db, params["id"])))) //Converting int to string
-	}
-}
-
-func GetStudentRecord(db *sql.DB, SID string, DOB string) Students {
-	results, err := db.Query("SELECT * FROM Students WHERE StudentID=? AND DOB=?", SID, DOB)
-	if err != nil {
-		panic(err.Error())
-	}
-	var student Students
-	for results.Next() {
-		err = results.Scan(&student.StudentID, &student.StudentName, &student.DOB, &student.Address, &student.PhoneNumber)
+	if response.StatusCode == 202 {
+		response, err := ioutil.ReadAll(response.Body)
 		if err != nil {
-			panic(err.Error())
+			println(err)
+		} else {
+			var std Students
+			err = json.Unmarshal([]byte(response), &std)
+			if err != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+//3.5.1.	View particulars
+func GetStudentRecord(SID int) Students {
+	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/GetStudentRecord/%d", SID)
+	response, err := http.Get(URL)
+	var student Students
+	if err != nil {
+		panic(err.Error())
+	}
+	if response.StatusCode == http.StatusAccepted {
+		response, err := ioutil.ReadAll(response.Body)
+		if err == nil {
+			err = json.Unmarshal(response, &student)
+		}
+		println(err)
+	}
+	return student
+}
+
+//3.5.3.	View modules taken
+func getModulesTaken(SID int) []Modules {
+	// results, err := db.Query("SELECT * FROM Modules WHERE StudentID=?", SID)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+	// var modules Modules
+	// for results.Next() {
+	// 	err = results.Scan(&modules.ModuleCode, &modules.ModuleName, &modules.ModuleSynopsis, &modules.ModuleObjective, &modules.ModuleStudent)
+	// 	if err != nil {
+	// 		panic(err.Error())
+	// 	}
+	// }
+	// return modules
+
+	//FOR WHEN I GET THE ENDPOINT FROM PKG3.4
+	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/getModulesTaken/%d", SID)
+	response, err := http.Get(URL)
+	if err != nil {
+		fmt.Print(err.Error())
+	} else if response.StatusCode == http.StatusAccepted {
+		reqBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			println(err)
+		} else {
+			var mods []Modules
+			err := json.Unmarshal(reqBody, &mods)
+			if err != nil {
+				panic(err.Error())
+			}
+		}
+	}
+	return nil
+}
+
+//3.5.4.	View original results
+func getResults(SID int) []Results {
+	URL := "http://172.20.30.96:8103/api/v1/getResults"
+	response, err := http.Get(URL)
+	if err != nil {
+		fmt.Print(err.Error())
+	} else if response.StatusCode == http.StatusAccepted {
+		respose, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			println(err)
+		} else {
+			var ResultsData []Results
+			err := json.Unmarshal(respose, &ResultsData)
+			if err != nil {
+				panic(err.Error())
+			}
+			return ResultsData
+		}
+	}
+	return nil
+}
+
+//3.5.5.	View adjusted results after marks trading
+func getAdjustedResults(SID int) []Results {
+	URL := "http://172.20.30.96:8103/api/v1/getResults"
+	response, err := http.Get(URL)
+	if err != nil {
+		fmt.Println(err.Error())
+	} else if response.StatusCode == http.StatusAccepted {
+		response, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			println(err)
+		} else {
+			var adjResults []Results
+			err := json.Unmarshal(response, &adjResults)
+			if err != nil {
+				panic(err.Error())
+			}
+			return adjResults
+		}
+	}
+	return nil
+}
+
+//3.5.6.	View timetable
+func getTimeTable(SID int) bool {
+	URL := fmt.Sprintf("http://172.20.30.96:8103/api/v1/getTimetable/%d", SID)
+	response, err := http.Get(URL)
+	if err != nil {
+		fmt.Print(err.Error())
+	} else if response.StatusCode == http.StatusAccepted {
+		reqBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			println(err)
+		} else {
+			var timetable Timetable
+			err := json.Unmarshal(reqBody, &timetable)
+			if err != nil {
+				panic(err.Error())
+			}
+		}
+	}
+	return false
+}
+
+//3.5.7.	List all students with ratings
+func getAllStudentsWithRatings() []Ratings {
+	response, err := http.Get("http://172.20.30.96:8103/api/v1/getAllStudentsWithRatings")
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	if response.StatusCode == http.StatusAccepted {
+		reqBody, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			println(err)
+		} else {
+			var RCs []Ratings
+			err := json.Unmarshal(reqBody, &RCs)
+			if err == nil {
+				return RCs
+			}
+		}
+	}
+	return nil
+}
+
+//3.5.8.	Search for other students
+func getDiffStudent(SID string) Students {
+	url := "http://172.20.30.96:8103/api/v1/getDiffStudent/1"
+	reqBody, err := http.Get(url)
+	var student Students
+
+	if err != nil {
+		fmt.Print(err.Error())
+	}
+	if reqBody.StatusCode == http.StatusAccepted {
+		reqBody, err := ioutil.ReadAll(reqBody.Body)
+		if err != nil || json.Unmarshal([]byte(reqBody), &student) != nil {
+			print(err)
 		}
 	}
 	return student
 }
 
-func EditStudentRecord(db *sql.DB, SID int, SN string, DOB string, ADS string, PN int) bool {
-	query := fmt.Sprintf("UPDATE Students SET StudentName='%s', DOB='%s', Address='%s', PhoneNumber=%d WHERE StudentID=%d", SN, DOB, ADS, PN, SID)
-	_, err := db.Query(query)
+//3.5.2.	Update particulars
+func EditStudentRecord(student Students) bool {
+	json, _ := json.Marshal(student)
+	URL := "http://172.20.30.96:8103/api/v1/EditStudentRecord"
+
+	response, err := http.NewRequest(http.MethodPut, URL, bytes.NewBuffer(json))
 	if err != nil {
 		panic(err.Error())
+	} else {
+		response.Header.Set("Content-Type", "application/json")
+
+		request := &http.Client{}
+		response, err := request.Do(response)
+
+		if err != nil {
+			fmt.Printf("Error in JSON encoding. Error is %s", err)
+		} else {
+			if response.StatusCode == http.StatusCreated {
+				response.Body.Close()
+			}
+		}
+		response.Body.Close()
 	}
-	return true
+	return false
 }
 
 func DeleteStudents(db *sql.DB, SID int) {
@@ -214,8 +512,10 @@ func main() {
 	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
 	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", phome)
-	router.HandleFunc("/api/v1/validateStudentRecord/{id}", validateStudent)
-	router.HandleFunc("/api/v1/students/{studentid}/{dob}", student).Methods("GET", "PUT", "POST", "DELETE")
+	//router.HandleFunc("/api/v1/validateStudentRecord/{id}", validateStudent)
+	router.HandleFunc("/api/v1/students/{studentid}/", student).Methods("GET", "PUT")
+	router.HandleFunc("/api/v1/getmodule/{method}/{studentid}", getmodule).Methods("GET")
+	router.HandleFunc("/api/v1/otherdetails/{method}/{studentname}", otherdetails).Methods("GET")
 
 	fmt.Println("Listening at port 8103")
 	log.Fatal(http.ListenAndServe(":8103", handlers.CORS(headers, methods, origins)(router)))
