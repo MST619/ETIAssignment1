@@ -509,7 +509,7 @@ func main() {
 	students = make(map[string]studentInfo)
 	router := mux.NewRouter()
 	headers := handlers.AllowedHeaders([]string{"X-REQUESTED-With", "Content-Type"})
-	methods := handlers.AllowedMethods([]string{"GET", "PUT", "POST", "DELETE"})
+	methods := handlers.AllowedMethods([]string{"GET", "PUT"})
 	origins := handlers.AllowedOrigins([]string{"*"})
 	router.HandleFunc("/api/v1/", phome)
 	//router.HandleFunc("/api/v1/validateStudentRecord/{id}", validateStudent)
