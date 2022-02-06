@@ -109,7 +109,7 @@ func student(w http.ResponseWriter, r *http.Request) {
 
 	//THE GET request for student to retrive data from the Database.
 	if r.Method == "GET" {
-		stdnt = GetStudentRecord(studentID)
+		stdnt = GetStudentRecord(studentID, stdnt.DOB)
 		if stdnt == (Students{}) {
 			w.WriteHeader(http.StatusUnprocessableEntity)
 			w.Write([]byte("No student found"))
@@ -284,7 +284,7 @@ func validateStudentID(SID string) bool {
 }
 
 //3.5.1.	View particulars
-func GetStudentRecord(SID int) Students {
+func GetStudentRecord(SID int, DOB string) Students {
 	URL := fmt.Sprintf("http://localhost:8103/api/v1/GetStudentRecord/%d", SID)
 	response, err := http.Get(URL)
 	var student Students
