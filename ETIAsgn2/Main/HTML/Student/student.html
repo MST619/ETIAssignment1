@@ -46,7 +46,7 @@
             }
             $.ajax({
                 type: type,
-                url: "http://172.20.30.96:8103/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296",
+                url: "http://10.31.11.11:8100/api/v1/students/"+studentid+"/"+dob+"?key=2c78afaf-97da-4816-bbee-9ad239abb296",
                 dataType: "json",
                 data: JSON.stringify(json),
                 contentType: "application/json",
@@ -109,7 +109,7 @@
             <br>
                 <div>
                     <label for="DOB">DOB:</label>
-                    <input type="text" class="form-control" name="DOB" id="DOB" placeholder="Enter DOB">
+                    <input type="text" class="form-control" name="DOB" id="DOB" placeholder="Enter DOB" value="20-10-1985">
                 </div>
             <br>
                 <button type="submit" class="btn btn-primary">Submit</button>
