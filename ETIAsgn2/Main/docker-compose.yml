@@ -19,6 +19,8 @@ services:
   web:
     container_name: web
     hostname: web
+    build:
+      context: ./HTML
     image: mst619/main_web
     restart: always
     ports:
